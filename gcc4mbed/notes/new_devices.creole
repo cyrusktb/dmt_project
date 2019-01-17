@@ -1,0 +1,32 @@
+==Adding New Devices to GCC4MBED
+The initial version of GCC4MBED which took advantage of the open source mbed SDK only supported the LPC1768, LPC11U24,
+and KL25Z platforms. Now when GCC4MBED releases are made, an attempt is made to add *-device.mk makefiles to the 
+[[https://github.com/adamgreen/gcc4mbed/tree/master/build/ | build/ ]] folder for every target device which has GCC_ARM
+supported tagged in the 
+[[https://github.com/adamgreen/gcc4mbed/blob/master/external/mbed-os/targets/targets.json | targets.json]] file.
+
+If you are wanting to experiment with a version of mbed-os other than what is currently being used by GCC4MBED then
+there are steps you can use to generate the corresponding *-device.mk makefiles for that specific mbed-os release:
+* Delete the current [[https://github.com/adamgreen/gcc4mbed/blob/master/external/mbed-os | external/mbed-os]] tree in
+  GCC4MBED to remove all traces of the current version.
+* Copy your experimental version of mbed-os into GCC4MBED's external/mbed-os folder.
+* It is probably best to delete all *-device.mk makefiles from the build/ folder to make sure that you don't get
+  left with makefiles for devices that are no longer supported in your version of mbed-os.
+* In the [[https://github.com/adamgreen/gcc4mbed/blob/master/mbedUpdater/ | mbedUpdater]] folder you will find code for
+  a program which can parse files in mbed-os to generate the *-device.mk and mbed-ignore.mk makefiles. You should
+  be able to build that tool on any Posix platform such as macOS, Linux, or Cygwin.
+* Run mbedUpdater to have it generate the makefiles corresponding to your version of mbed-os.
+
+mbedUpdater also produces two makefiles in the samples/HelloWorld folder: TestPass2.mk and TestPass5.mk.  These contain 
+a list of DEVICES that mbed officially releases for the mbed 2.0 and mbed-os 5.x releases. I perform a clean build of
+these 2 makefiles for each GCC4MBED release to make sure that the library code builds successfully for all of these 
+target devices.
+
+I only build and run tests on the following target devices before releasing GCC4MBED:
+* K64F
+* KL25Z
+* LPC1768
+* NRF51_DK
+
+Please feel free to open [[https://github.com/adamgreen/gcc4mbed/issues | GitHub issues]] to let me and the community 
+know if you hit any issues for a target that should be supported with the GCC_ARM toolchain so that we can investigate.
