@@ -1,0 +1,26 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/led_tracker.hpp
+opencv2/opencv.hpp
+-
+vector
+-
+
+/home/nickick/dmt_project/opencv_led_tracker/main.cpp
+iostream
+-
+opencv2/opencv.hpp
+-
+led_tracker.hpp
+/home/nickick/dmt_project/opencv_led_tracker/led_tracker.hpp
+
+/home/nickick/dmt_project/opencv_led_tracker/src/led_tracker.cpp
+led_tracker.hpp
+/home/nickick/dmt_project/opencv_led_tracker/src/led_tracker.hpp
+

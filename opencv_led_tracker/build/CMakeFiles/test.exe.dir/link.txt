@@ -1,0 +1,1 @@
+/usr/bin/c++    -rdynamic CMakeFiles/test.exe.dir/main.cpp.o  -o test.exe /usr/lib/x86_64-linux-gnu/libopencv_core.so.3.2.0 
