@@ -3,6 +3,9 @@
 
 ## C++ stuff
 
+# Build directories
+*/build/*
+
 # Prerequisites
 *.d
 
