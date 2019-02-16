@@ -12,4 +12,4 @@ Team Members:
 Create a robotic grabber controlled by a haptic feedback glove
 
 ## setup.bash
-When compiling the mbed code (on linux) run `. setup.bash` from the main directory before making the code (by running `make` in the code directory).
+When compiling the mbed code (on linux) run `source setup.bash` from the main directory before making the code (by running `make` in the code directory).
