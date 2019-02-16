@@ -2,11 +2,11 @@
 Imperial College Dept. Mechanical Engineering 3rd Year Design Make Test Project
 
 Team Members:
-Vlad Khon
-Nick Hafner
-Matt Leclerq
-Cyrus Ketabi
-Joseph Coulson
+ - Vlad Khon
+ - Nick Hafner
+ - Matt Leclerq
+ - Cyrus Ketabi
+ - Joseph Coulsond
 
 ## Project Description
 Create a robotic grabber controlled by a haptic feedback glove
