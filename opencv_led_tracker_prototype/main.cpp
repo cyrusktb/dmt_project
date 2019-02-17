@@ -44,9 +44,9 @@ int main(int argc, char **argv) {
         cv::GaussianBlur(displayFrame, buffer, cv::Size(11, 11), 0);
         cv::cvtColor(buffer, buffer, CV_BGR2HSV);
         cv::split(buffer, hsv);
-        //cv::imshow("H", hsv[0]);
-        cv::imshow("S - unthresh", hsv[1]);
-        //cv::imshow("V", hsv[2]);
+        cv::imshow("H - unthresh", hsv[0]);
+        //cv::imshow("S - unthresh", hsv[1]);
+        //cv::imshow("V - unthresh", hsv[2]);
         
         // Circle any detected BLUE LEDs
         circle_led(displayFrame, displayFrame, LedColour::BLUE, my_red);
