@@ -1,6 +1,9 @@
 # Nick is bad at vim
 *.swp
 
+# Vim tags
+*/tags
+
 ## C++ stuff
 
 # Build directories
