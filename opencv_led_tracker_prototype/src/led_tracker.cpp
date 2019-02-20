@@ -158,6 +158,14 @@ std::vector<LedPos> find_leds2(cv::Mat &src_img, LedColour led_colour) {
     for(int i = 0; i < contours.size(); i++) {
         // DEBUG
         cv::drawContours(src_img, contours, -1, cv::Scalar(30, 30, 200));
+        // Find minimum area rectangle
+        cv::Point2f rect_points[4];
+        cv::RotatedRect min_rect = cv::minAreaRect(contours[i]);
+        min_rect.points(rect_points);
+        for(char j = 0; j < 4; j++) {
+            cv::line(src_img, rect_points[j], 
+                     rect_points[(j+1)%4], cv::Scalar(30, 200, 30));
+        }
         //LedPos lp = find_led_pos(contours[i]);
         cv::drawContours(debug_imgs[0], 
                          contours, 

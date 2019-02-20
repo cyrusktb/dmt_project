@@ -17,6 +17,7 @@ include_directories(
 set(SOURCE_FILES 
     main.cpp
     src/led_tracker.cpp
+    src/camera.cpp
 )
 
 add_executable(
