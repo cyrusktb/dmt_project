@@ -1,7 +1,7 @@
 #include "mbed.h"
  
 Serial pc(USBTX, USBRX);
-Serial esp(PA_2, PB_4); // tx, rx
+Serial esp(PA_9, PA_10); // tx, rx
 DigitalOut reset(PA_0);
 Timer t;
  
@@ -9,8 +9,8 @@ int  count,ended,timeout;
 char buf[1024];
 char snd[255];
  
-char ssid[32] = "nickick-laptop";     // enter WiFi router ssid inside the quotes
-char pwd [32] = "auSEtdYV"; // enter WiFi router password inside the quotes
+char ssid[32] = "NickDMTTest";     // enter WiFi router ssid inside the quotes
+char pwd [32] = "jora6830"; // enter WiFi router password inside the quotes
  
 void SendCMD(),getreply(),ESPconfig(),ESPsetbaudrate();
  
@@ -26,8 +26,10 @@ int main()
     getreply();
  
     esp.baud(115200);   // change this to the new ESP8266 baudrate if it is changed at any time.
- 
-    //ESPsetbaudrate();   //******************  include this routine to set a different ESP8266 baudrate  ******************
+
+    ESPsetbaudrate();   //******************  include this routine to set a different ESP8266 baudrate  ******************
+
+    esp.printf("ATE0\r\n");
  
     ESPconfig();        //******************  include Config to set the ESP8266 configuration  ***********************
  
@@ -175,13 +177,13 @@ void getreply()
         if(esp.readable()) {
             buf[count] = esp.getc();
             count++;
-            pc.printf("%d\n", count);
+            if(count == sizeof(buf))
+                ended = 1;
         }
         if(t.read() > timeout) {
             ended = 1;
             t.stop();
             t.reset();
-            pc.printf("reset\n");
         }
     }
 }
