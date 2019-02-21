@@ -32,6 +32,8 @@ int main() {
             boost::asio::write(socket, 
                                boost::asio::buffer(message), 
                                ignored_error);
+
+            std::cout << "Received a connection!" << std::endl;
         }
     }
     catch(std::exception& e) {
