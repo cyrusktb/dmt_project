@@ -19,6 +19,7 @@ include_directories(
 
 set(SOURCE_FILES 
     server_main.cpp
+    src/connection_manager.cpp
 )
 
 set(CLIENT_SOURCE_FILES
