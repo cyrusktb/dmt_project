@@ -405,7 +405,7 @@ Disassembly of section .text:
  800051a:	4622      	mov	r2, r4
  800051c:	4629      	mov	r1, r5
  800051e:	f003 fde9 	bl	80040f4 <__aeabi_atexit>
- 8000522:	2107      	movs	r1, #7
+ 8000522:	2110      	movs	r1, #16
  8000524:	4630      	mov	r0, r6
  8000526:	f003 fa67 	bl	80039f8 <mbed::InterruptIn::InterruptIn(PinName)>
  800052a:	4630      	mov	r0, r6
@@ -413,7 +413,7 @@ Disassembly of section .text:
  800052e:	4622      	mov	r2, r4
  8000530:	4629      	mov	r1, r5
  8000532:	f003 fddf 	bl	80040f4 <__aeabi_atexit>
- 8000536:	2110      	movs	r1, #16
+ 8000536:	2108      	movs	r1, #8
  8000538:	4630      	mov	r0, r6
  800053a:	f003 fa5d 	bl	80039f8 <mbed::InterruptIn::InterruptIn(PinName)>
  800053e:	4630      	mov	r0, r6
@@ -421,7 +421,7 @@ Disassembly of section .text:
  8000542:	4622      	mov	r2, r4
  8000544:	4629      	mov	r1, r5
  8000546:	f003 fdd5 	bl	80040f4 <__aeabi_atexit>
- 800054a:	2108      	movs	r1, #8
+ 800054a:	2107      	movs	r1, #7
  800054c:	4630      	mov	r0, r6
  800054e:	f003 fa53 	bl	80039f8 <mbed::InterruptIn::InterruptIn(PinName)>
  8000552:	4630      	mov	r0, r6

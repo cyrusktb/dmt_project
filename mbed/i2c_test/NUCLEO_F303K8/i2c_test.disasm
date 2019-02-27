@@ -301,10 +301,10 @@ Disassembly of section .text:
  8000424:	22e4      	movs	r2, #228	; 0xe4
  8000426:	a90c      	add	r1, sp, #48	; 0x30
  8000428:	a803      	add	r0, sp, #12
- 800042a:	f000 f823 	bl	8000474 <Tca9543a::Tca9543a(mbed::I2C*, char)>
+ 800042a:	f000 f823 	bl	8000474 <Multiplexer::Multiplexer(mbed::I2C*, char)>
  800042e:	2101      	movs	r1, #1
  8000430:	a803      	add	r0, sp, #12
- 8000432:	f000 f822 	bl	800047a <Tca9543a::select(char)>
+ 8000432:	f000 f822 	bl	800047a <Multiplexer::select(char)>
  8000436:	2105      	movs	r1, #5
  8000438:	a801      	add	r0, sp, #4
  800043a:	f7ff ff03 	bl	8000244 <Drv2605::set_mode(char)>
@@ -332,12 +332,12 @@ Disassembly of section .text:
  800046c:	40855555 	.word	0x40855555
  8000470:	3c23d70a 	.word	0x3c23d70a
 
-08000474 <Tca9543a::Tca9543a(mbed::I2C*, char)>:
+08000474 <Multiplexer::Multiplexer(mbed::I2C*, char)>:
  8000474:	6001      	str	r1, [r0, #0]
  8000476:	7102      	strb	r2, [r0, #4]
  8000478:	4770      	bx	lr
 
-0800047a <Tca9543a::select(char)>:
+0800047a <Multiplexer::select(char)>:
  800047a:	b51f      	push	{r0, r1, r2, r3, r4, lr}
  800047c:	aa04      	add	r2, sp, #16
  800047e:	f041 0108 	orr.w	r1, r1, #8

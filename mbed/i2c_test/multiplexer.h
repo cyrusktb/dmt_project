@@ -1,12 +1,12 @@
-#ifndef __TCA9543A_H__
-#define __TCA9543A_H__
+#ifndef __MULTIPLEXER_H__
+#define __MULTIPLEXER_H__
 
 #include "mbed.h"
 
-class Tca9543a {
+class Multiplexer {
 public:
     // Constructor
-    Tca9543a(I2C *i2c, char i2c_addr = 0xE4);
+    Multiplexer(I2C *i2c, char i2c_addr = 0xE4);
 
     // Enable a channel
     void select(char channel);
@@ -19,4 +19,4 @@ private:
     char i2c_addr_;
 };
 
-#endif // __TCA9543A_H__
+#endif // __MULTIPLEXER_H__

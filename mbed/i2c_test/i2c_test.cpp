@@ -1,6 +1,6 @@
 #include "mbed.h"
 #include "drv2605.h"
-#include "tca9543a.h"
+#include "multiplexer.h"
 
 int main() {
     // Create switch controller
@@ -13,7 +13,7 @@ int main() {
     Drv2605 lra_driver(&i2c);
 
     // Initialise Multiplexer
-    Tca9543a multiplexer(&i2c);
+    Multiplexer multiplexer(&i2c);
 
     // Set the multiplexer to output on channel 0
     multiplexer.select(1);
