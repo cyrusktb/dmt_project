@@ -1,29 +1,33 @@
-#ifndef __LED_TRACKER_HPP
-#define __LED_TRACKER_HPP
+#ifndef __LED_TRACKER_HPP__
+#define __LED_TRACKER_HPP__
 
 // OpenCV hue ranges from 0 to 179
 
 // HSV blue is 120
 #define BLUE_HUE_MAX 125
-#define BLUE_HUE_MIN 105
+#define BLUE_HUE_MIN 112
 // HSV green is 60
-#define GREEN_HUE_MAX 75
-#define GREEN_HUE_MIN 50
+#define GREEN_HUE_MAX 72
+#define GREEN_HUE_MIN 53
 
 // Saturation ranges from 0 to 255
 
-#define BLUE_SAT_MAX 40
+#define BLUE_SAT_MAX 25
 #define BLUE_SAT_MIN 0
-#define GREEN_SAT_MAX 40
+#define GREEN_SAT_MAX 25
 #define GREEN_SAT_MIN 0
 
 // Value ranges from 0 to 255
 
 #define BLUE_VAL_MAX 255
-#define BLUE_VAL_MIN 240
+#define BLUE_VAL_MIN 245
 #define GREEN_VAL_MAX 255
-#define GREEN_VAL_MIN 240
+#define GREEN_VAL_MIN 245
 
+// When finding the colour of an LED, what is the largest search multiplier?
+#define CIRCLE_MULT_MAX 4.0f
+#define CIRCLE_MULT_MIN 2.0f
+#define CIRCLE_MULT_STEP 0.1f
 
 
 #include <opencv2/opencv.hpp>
@@ -39,7 +43,7 @@ enum LedColour {
 // Struct to store position and size of LED illumination
 struct LedPos {
     cv::Point center;
-    unsigned int average_radius;
+    float average_radius;
 };
 
 
@@ -52,10 +56,6 @@ void circle_led(cv::Mat &src_img,
 
 // Locates all LEDs of colour *led_colour* in the image *src_img*
 std::vector<LedPos> find_leds(cv::Mat &src_img, LedColour led_colour);
-
-// Locates all LEDs of colour *led_colour* in the image *src_img*
-// Second method attempt
-std::vector<LedPos> find_leds2(cv::Mat &src_img, LedColour led_colour);
 
 // Finds the center and average radius of a single *contour*, 
 // used by *find_leds*
@@ -75,4 +75,4 @@ void split_and_threshold_channels(cv::Mat &src,
                                   cv::Scalar min,
                                   cv::Scalar max);
 
-#endif // __LED_TRACKER_HPP
+#endif // __LED_TRACKER_HPP__

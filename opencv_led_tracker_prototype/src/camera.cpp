@@ -41,11 +41,13 @@ Camera::~Camera() {
 }
 
 void Camera::get_image(cv::Mat &dest) {
+    cv::Mat raw;
+
     // Capture the frame
-    cap_ >> dest;
+    cap_ >> raw;
     
     // Undistort the image
-    cv::undistort(dest, dest, intrinsic_, distCoeffs_);
+    cv::undistort(raw, dest, intrinsic_, distCoeffs_);
 
     // Flip to mirror user (for debugging)
     cv::flip(dest, dest, 1);

@@ -20,7 +20,7 @@ void circle_led(cv::Mat &src_img,
                 LedColour led_colour,
                 cv::Scalar bgr_draw_colour) {
     // First find the locations of the LEDs
-    std::vector<LedPos> leds = find_leds2(src_img, led_colour);
+    std::vector<LedPos> leds = find_leds(src_img, led_colour);
 
     // Iterate through each led and draw to the destination image
     for(int i = 0; i < leds.size(); i++) {
@@ -69,124 +69,81 @@ std::vector<LedPos> find_leds(cv::Mat &src_img, LedColour led_colour) {
     // Split the image into hsv channels
     cv::Mat hsv[3];
     split_and_threshold_channels(buffer, hsv, min, max);
-
-    // Compare overlapping regions for each channel
-    cv::bitwise_and(hsv[0], hsv[1], buffer);
-    cv::bitwise_and(hsv[2], buffer, buffer);
-
-    // Find the contours of the remaining image
-    std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(buffer,
-                     contours,
-                     CV_RETR_LIST,
-                     CV_CHAIN_APPROX_NONE);
     
-    // Create output data storage
-    std::vector<LedPos> led_positions;
-    // Loop through each contour and find the centre and average radius
-    for(int i = 0; i < contours.size(); i++) {
-        LedPos lp = find_led_pos(contours[i]);
-        if(lp.average_radius < 100)
-            led_positions.push_back(lp);
-    }
-
-    return led_positions;
-}
-
-std::vector<LedPos> find_leds2(cv::Mat &src_img, LedColour led_colour) {
-    // Store the src image in a temporary matrix
-    cv::Mat buffer;
-
-    // Apply gaussian blur to filter out some noise
-    cv::GaussianBlur(src_img, buffer, cv::Size(11, 11), 0);
-
-    // Create threshold values and populate
-    cv::Scalar min, max;
-    get_colour_threshold_min_max(led_colour, min, max);
-    
-    // Split the image into hsv channels
-    cv::Mat hsv[3];
-    split_and_threshold_channels(buffer, hsv, min, max);
-    
-    // DEBUG
-    cv::Mat debug_imgs[3];
-    for(char i = 0; i < 3; i++)
-        hsv[i].copyTo(debug_imgs[i]);
-
     // Compare overlapping saturation and value regions
     cv::bitwise_and(hsv[1], hsv[2], hsv[1]);
 
-    // Find contours of saturation points
+    // Find contours of saturation and value points
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(hsv[1],
                      contours,
                      CV_RETR_LIST,
                      CV_CHAIN_APPROX_NONE);
-    // Loop through each contour and find the hue at the edge
-    // If the majority of the edge hue is the correct colour then 
-    // it's the LED we want. If it's black it's been thresholded.
-    for(int i = 0; i < contours.size(); i++) {
-        // Storage variables
-        int hue_correct = 0;
-        // Loop through each point and check the corresponding hue
-        for(int j = 0; j < contours[i].size(); j++) {
-            if(hsv[0].at<unsigned char>(contours[i][j].x, 
-                                        contours[i][j].y)){
-                hue_correct++;
-            }
-            else {
-                hue_correct--;
-            }
-            std::cout << (int)hsv[0].at<unsigned char>(contours[i][j].x,
-                                                       contours[i][j].y) 
-                      << std::endl;
-        }
-
-        // If the result is positive then more than half are the 
-        // correct colour so assume it's the right LED
-        if(hue_correct < 0) {
-            // Colour is in correct so remove the contour
-            contours.erase(contours.begin() + i);
-            // Vector automatically resizes so decrement i
-            i--;
-        }
-    }
-
-    // Create output data storage
-    std::vector<LedPos> led_positions;
-    // Loop through each contour and find the centre and average radius
-    for(int i = 0; i < contours.size(); i++) {
-        // DEBUG
-        cv::drawContours(src_img, contours, -1, cv::Scalar(30, 30, 200));
-        // Find minimum area rectangle
-        cv::Point2f rect_points[4];
-        cv::RotatedRect min_rect = cv::minAreaRect(contours[i]);
-        min_rect.points(rect_points);
-        for(char j = 0; j < 4; j++) {
-            cv::line(src_img, rect_points[j], 
-                     rect_points[(j+1)%4], cv::Scalar(30, 200, 30));
-        }
-        //LedPos lp = find_led_pos(contours[i]);
-        cv::drawContours(debug_imgs[0], 
-                         contours, 
-                         -1, 
-                         cv::Scalar(30, 30, 200));
-        cv::drawContours(debug_imgs[1], 
-                         contours, 
-                         -1, 
-                         cv::Scalar(30, 30, 200));
-        cv::drawContours(debug_imgs[2], 
-                         contours, 
-                         -1, 
-                         cv::Scalar(30, 30, 200));
-        //if(lp.average_radius < 100)
-        //    led_positions.push_back(lp);
-    }
     
-    // DEBUG
-    cv::imshow("H", debug_imgs[0]);
-    cv::imshow("S", debug_imgs[1]);
-    cv::imshow("V", debug_imgs[2]);
+    // Loop through each contour and find the center point and average
+    // Radius. Check if the most common hue within a radius of the
+    // center is the one we're looking for and match if it is
+    std::vector<LedPos> led_positions;
+    for(int i = 0; i < contours.size(); i++) {
+        LedPos lp = find_led_pos(contours[i]);
+        
+        // Prevent overly large "LEDs" from slowing down the program
+        // These are typically bright windows or ceiling lights etc.
+        // Filter out tiny "LEDs" which can be caused by noise
+        if(lp.average_radius < 20 && lp.average_radius > 3) {
+            // See if there's a circle ranging from CIRCLE_MULT_MIN to 
+            // CIRCLE_MULT_MAX which gives the correct colour
+            bool correct_colour = false;
+            float size_mult;
+            for(size_mult = CIRCLE_MULT_MIN; 
+                size_mult <= CIRCLE_MULT_MAX && !correct_colour;
+                size_mult += CIRCLE_MULT_STEP) {
+                
+                float r = lp.average_radius * size_mult;
+                
+                // Create a (circular) ROI over this contour
+                cv::Rect region(lp.center - cv::Point(r,r), 
+                                cv::Size(2*r, 2*r));
+
+                cv::Mat roi;
+                // Ignore this if the roi leaves the screen
+                try {
+                    roi = cv::Mat(hsv[0], region);
+                }
+                catch(cv::Exception) {
+                    continue;
+                }
+                
+                cv::Mat mask(cv::Size(2*r, 2*r), CV_8U, cv::Scalar(0));
+                cv::circle(mask, 
+                           cv::Point2d(r, r), 
+                           r, 
+                           cv::Scalar(255), 
+                           -1, 
+                           cv::LINE_AA);
+                cv::Mat c_roi;
+                cv::bitwise_and(roi, roi, c_roi, mask);
+
+                // Check the most common hue of the ROI
+                int correct_count = 0;
+                int total_count = 0;
+                for(int i = 0; i < c_roi.rows; i++) {
+                    for(int j = 0; j < c_roi.cols; j++) {
+                        if(c_roi.at<char>(i, j))
+                            correct_count++;
+                        total_count++;
+                    }
+                }
+
+                // If the counter is positive then we have our LED!!!
+                if((float)correct_count / (float)total_count >= 0.33)
+                    correct_colour = true;
+            }
+
+            if(correct_colour)
+                led_positions.push_back(lp); 
+        }
+    }
 
     return led_positions;
 }   
