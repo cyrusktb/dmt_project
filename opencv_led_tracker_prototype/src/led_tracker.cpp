@@ -127,9 +127,9 @@ std::vector<LedPos> find_leds(cv::Mat &src_img, LedColour led_colour) {
                 // Check the most common hue of the ROI
                 int correct_count = 0;
                 int total_count = 0;
-                for(int i = 0; i < c_roi.rows; i++) {
+                for(int k = 0; k < c_roi.rows; k++) {
                     for(int j = 0; j < c_roi.cols; j++) {
-                        if(c_roi.at<char>(i, j))
+                        if(c_roi.at<char>(k, j))
                             correct_count++;
                         total_count++;
                     }
