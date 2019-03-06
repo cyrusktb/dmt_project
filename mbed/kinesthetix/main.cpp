@@ -14,24 +14,30 @@ int main() {
     t.start();
     pc.baud(9600); //Change this as desired for thine Personal Computer
     //This variable must change depending on what the claw position is 
-    int desired = 200; 
-    volatile float desShift; 
-    float Kntrl, prevT, curT, dt, iE = 0;
-    float Kp = 0.002, Ki = 0.0003;
+    int desired = -50; 
+    volatile float preDesShift, desShift; 
+    float Kntrl, prevT, curT, dt, iE = 0, dE = 0;
+    float Kp = 0.01378, Ki = 0.0006875, Kd = 0.00011;// Ki = 0.0592, Kd = 0.001104; //Kp = 0.1278
     while(true) {
         prevT = curT;
         curT = t.read();
         dt = curT - prevT;
-        
         pos = wheel.getPulses();
+        preDesShift = desShift;
         desShift = desired - pos; //The "Normalised" Position to stop the motor
-        iE += desShift * dt;
-        Kntrl = 0.5 + Kp * desShift;// + Ki * iE ; //Proportional Control
-        myservo = Kntrl;
+        // Don't integrate error if the position is so far out that kp alone hits max speed
+        if(Kp * desShift <= 0.5f && Kp * desShift >= -0.5f) {
+            iE += desShift * dt;
+            }
+        dE = (desShift - preDesShift)/dt;
+        Kntrl = Kp * desShift + Ki * iE + Kd * dE; //Proportional Control
+        //if(Kntrl > 0.5) Kntrl = 0.5;
+        //if(Kntrl < -0.5) Kntrl = -0.5;
+        myservo = 0.5 + Kntrl;
         pc.printf("\rPulses: %i desShift: %f propCntrl: %f \r\n", pos, desShift, Kntrl);        
         //This code ultimately receives a desired position "desired" from the 
         //claw fingers which then make the servos operate towards that position
-        //PROPORTIONALLY CONTROLLED BOI;
+        //PROPORTIONALLY CONTROLLED BOI
     }
 }
 
