@@ -19,6 +19,8 @@ public:
     void control(float desired);
 private:
     Timer t;
+    Servo myservo(char pinS);
+    QEI wheel(char pin1, char pin2, char NC, float Pul, char Type);
     int pos;
     float Kp, Ki, Kd;
     float iE, dE;
