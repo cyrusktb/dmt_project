@@ -19,12 +19,11 @@ public:
     void control(float desired);
 private:
     Timer t;
-    Servo myservo(char pinS);
-    QEI wheel(char pin1, char pin2, char NC, float Pul, char Type);
+    Servo myservo;
+    QEI wheel;
     int pos;
     float Kp, Ki, Kd;
     float iE, dE;
-    volatile int desired;
     volatile float preDesShift, desShift;
     float Kntrl;
     float dt;

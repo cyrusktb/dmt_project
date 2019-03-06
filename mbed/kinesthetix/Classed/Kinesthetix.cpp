@@ -3,17 +3,17 @@
 #include "QEI.h"
 #include "Kinesthetix.hpp"
 
-Kinesthetix::Kinesthetix(FingerType finger) {
+Kinesthetix::Kinesthetix(FingerType finger) :myservo(NC), wheel(NC, NC, NC, 24){
     if (finger == MIDDLE){
-        myservo(PA_4);
-        wheel(PA_1, PA_3, NC, 24, QEI::X4_ENCODING);
+        myservo = Servo(PA_4);
+        wheel = QEI(PA_1, PA_3, NC, 24, QEI::X4_ENCODING);
     };
     if (finger == INDEX){
-        myservo(PB_4);
+        myservo = Servo(PB_4);
     };
     if (finger == THUMB){
-        myservo(PA_11);
-        wheel(PA_12, PB_0, NC, 24, QEI::X4_ENCODING);
+        myservo = Servo(PA_11);
+        wheel = QEI(PA_12, PB_0, NC, 24, QEI::X4_ENCODING);
     };
     iE = 0;
     dE = 0;
@@ -27,8 +27,8 @@ void Kinesthetix::control(float desired) {
         t.start();                      // Start timer
         dt = t.read() * 0.7 + dt * 0.3; // Numerical smoothing as it's quite noisy
         t.reset();                      // Reset timer to 0, but keep counting
-        
-        desShift = desired - wheel.getPulses(); //The "Normalised" Position to stop the motor
+        pos = wheel.getPulses();
+        desShift = desired - pos; //The "Normalised" Position to stop the motor
         
         //  INTEGRAL
         // Don't integrate error if the position is so far out that kp alone hits max speed
