@@ -75,9 +75,12 @@
 
 #define MIN_POS_WEIGHT 0.2
 
+// Minimum total weighting, below this is '0'
+
+#define MIN_TOTAL_WEIGHT 0.05
+
 #include <opencv2/opencv.hpp>
 #include <vector>
-#include <math.h>
 #include <thread>
 #include <mutex>
 #include <stdexcept>
@@ -216,6 +219,10 @@ private:
     const char GREEN = 0;
     const char BLUE_L = 1;
     const char BLUE_R = 2;
+
+    const cv::Vec3f green_pos;
+    const cv::Vec3f blue_l_pos;
+    const cv::Vec3f blue_r_pos;
 };
 
 #endif // __LED_TRACKER_HPP__

@@ -217,14 +217,14 @@ void LedTracker::update_position_weighting() {
             // Also move the led_pos_ along so that the next position 
             // can be written into position 0
             if(j != LED_POS_MEMORY -1)
-                led_pos_[i][j+1] = led_pos[i][j];
+                led_pos_[i][j+1] = led_pos_[i][j];
         }
     }
 
     // If the last data point z position is 0 then we do not have 
     // enough data to perform memory-based estimation yet, so return early
     for(char i = 0; i < 3; i++) {
-        if(led_pos[i][LED_POS_MEMORY - 1][2] == 0) {
+        if(led_pos_[i][LED_POS_MEMORY - 1][2] == 0) {
             position_estimated_ = false;
             return;
         }
@@ -310,19 +310,24 @@ void LedTracker::calculate_LED_positions() {
         for(char j = 0; j < 2; j++) {
             // Loop through weights
             for(int i = 0; i < hue_weighting_[j].size(); i++) {
-                if(hue_weighting_[j][i][0] > max_hues[j][0]) {
+                if(std::get<0>(hue_weighting_[j][i]) > max_hues[j][0]) {
                     // Update best weighting and position
-                    max_hues[j][0] = hue_weighting_[j][i][0];
+                    max_hues[j][0] = std::get<0>(hue_weighting_[j][i]);
                     pos[j][0] = i;
                 }
-                if(hue_weighting_[j][i][1] > max_hues[j][1]) {
+                if(std::get<1>(hue_weighting_[j][i]) > max_hues[j][1]) {
                     // Store second best weighting and position
                     max_hues[j][2] = max_hues[j][1];
                     pos[j][2] = pos[j][1];
 
-                    // Updaye best weighting and position
-                    max_hues[j][1] = hue_weighting_[j][i][1];
+                    // Update best weighting and position
+                    max_hues[j][1] = std::get<1>(hue_weighting_[j][i]);
                     pos[j][1] = i;
+                }
+                else if(std::get<1>(hue_weighting_[j][i]) > max_hues[j][2]) {
+                    // Update best weighting and position
+                    max_hues[j][2] = std::get<1>(hue_weighting_[j][i]);
+                    pos[j][2] = i;
                 }
             }
         }
@@ -332,10 +337,55 @@ void LedTracker::calculate_LED_positions() {
         // use a cost-based optimisation algorithm? 
         // This could also be used with the position-based weighting
         // algorithm
+        return;
     }
 
-    // Simple method: Multiply the two weights and pick the best one
+    // Store the best 3 weights for green and 6 for blue and their locations
+    float best_weights[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    float best_iterators[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
     
+    // Simple method: Multiply the two weights and pick the best one
+    for(int i = 0; i < pair_weighting_.size(); i++) {
+        float w[3];
+        float w[0] = std::get<0>(pair_weighting_[i]);
+        float w[1] = std::get<1>(pair_weighting_[i]);
+        float w[2] = std::get<2>(pair_weighting_[i]);
+        int l = std::get<3>(pair_weighting_[i]);
+        int r = std::get<4>(pair_weighting_[i]);
+
+        // Multiply weights to find the total weight
+        w[0] *= std::get<0>(hue_weighting_[l])
+             * std::get<0>(hue_weighting_[r]);
+
+        w[1] *= std::get<1>(hue_weighting_[l])
+             * std::get<1>(hue_weighting_[r]);
+
+        w[2] *= std::get<1>(hue_weighting_[l])
+             * std::get<1>(hue_weighting_[r]);
+            
+        // Compare to best results and store
+        for(char j = 0; j < 3; j++) {
+            if(w[j] > best_weights[j][0]) {
+                best_weights[j][2] = best_weights[j][1];
+                best_weights[j][1] = best_weights[j][0];
+                best_weights[j][0] = w[j];
+                best_iterators[j][2] = best_iterators[j][1];
+                best_iterators[j][1] = best_iterators[j][0];
+                best_iterators[j][0] = i;
+            }
+            else if(w[j] > best_weights[j][1]) {
+                best_weights[j][2] = best_weights[j][1];
+                best_weights[j][1] = w[j];
+                best_iterators[j][2] = best_iterators[j][1];
+                best_iterators[j][1] = i;
+            }
+            else if(w[j] > best_weights[j][2]) {
+                best_weights[j][2] = w[j];
+                best_iterators[j][2] = i;
+            }
+        }
+    }
+    // Find which combination of points has the lowest cost function.
 }
 
 LedPos LedTracker::find_led_pos(std::vector<cv::Point> contour) {
