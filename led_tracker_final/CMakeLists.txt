@@ -19,7 +19,8 @@ include_directories(
 
 set(SOURCE_FILES 
     main.cpp
-    src/led_tracker.cpp
+    src/led_tracker_3d.cpp
+    src/led_tracker_2d.cpp
     src/camera.cpp
 )
 

@@ -1,6 +1,18 @@
-#include "led_tracker_2d.hpp"
+#include "led_tracker_3d.hpp"
 
-LedTracker3D::LedTracker3D() :thread_(&LedTracker3D::loop, this) {
+// Useful vector functions
+float dot(cv::Vec3f a, cv::Vec3f b) {
+    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+}
+
+float mag(cv::Vec3f a) {
+    return sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
+}
+LedTracker3D::LedTracker3D() 
+        :thread_(&LedTracker3D::loop, this), 
+         running_(true),
+         trackers_{ Ledtracker2D(LEFT_CAMERA_PARAMS), 
+                    LedTracker2D(RIGHT_CAMERA_PARAMS) } {
     // ctor
 }
 
@@ -22,9 +34,10 @@ void LedTracker3D::get_imgs(cv::Mat &left, cv::Mat &right) {
     right = imgs_[1];
 }
 
-void LedTracker3D::get_glove_pos(cv::Point3f &pos, cv::Point3f &rot) {
-    
-}
+void LedTracker3D::get_glove_pos(cv::Point3f &pos, cv::Point3f &ypr) {
+    pos = glove_pos_;
+    ypr = glove_ypr_;
+};
 
 void LedTracker3D::loop() {
     // Create lambda to pass to threads easily
@@ -95,15 +108,15 @@ void LedTracker3D::find_glove_pos() {
 
     // Find the combination with the least error
     float err = 99999;
-    int[3] err_its = {0, 0, 0};
+    int err_its[3] = {0, 0, 0};
 
     // Loop through each combination of LEDs
     for(int i = 0; i < points[0].size(); i++) {
         for(int j = 0; j < points[1].size(); i++) {
             // If the point has a large enough threshold to be on the left
-            if(pot_leds_[0][point_its[j][0]].total_weight[1] >=
+            if(pot_leds_[0][*(point_its[j][0])].total_weight[1] >=
                MIN_TOTAL_WEIGHT                              || 
-               pot_leds_[1][point_its[j][1]].total_weight[1] >= 
+               pot_leds_[1][*(point_its[j][1])].total_weight[1] >= 
                MIN_TOTAL_WEIGHT) {
                 for(int k = 0; k < points[1].size() {
                     // Ignore duplicate points
@@ -111,16 +124,16 @@ void LedTracker3D::find_glove_pos() {
                         continue;
 
                     // Ignore points not possibly on the right
-                    if(pot_leds_[0][point_its[k][0]].total_weight[2] <
+                    if(pot_leds_[0][*(point_its[k][0])].total_weight[2] <
                        MIN_TOTAL_WEIGHT                              || 
-                       pot_leds_[1][point_its[k][1]].total_weight[2] < 
+                       pot_leds_[1][*(point_its[k][1])].total_weight[2] < 
                        MIN_TOTAL_WEIGHT)
                         continue;
                     
                     // Calculate error in pose given these three points
-                    float e = calculate_pose_error(points[0][i],
-                                                   points[1][j],
-                                                   points[1][k]);
+                    float e = calculate_error(points[0][i],
+                                              points[1][j],
+                                              points[1][k]);
                     
                     // Update best solution
                     if(e < err) {
@@ -135,6 +148,46 @@ void LedTracker3D::find_glove_pos() {
     }
 
     // Calculate the pose of the triangle made by the three points
+    // We want to find a matrix T such that T*G0 = G, T*B_L0 = B_L 
+    // and T*B_R0 = B_R
+
+    cv::Point3f best_points[3];
+    best_points[0] = points[0][err_its[0]];
+    best_points[1] = points[1][err_its[1]];
+    best_points[2] = points[1][err_its[2]];
+
+    // Calculate the vector G->B)L
+    cv::Vec3f GBL = cv::Vec3f(BLUE_L_POS - GREEN_POS);
+    // Calculate the new vector G'->BL'
+    cv::Vec3f new_GBL = cv::Vec3f(best_points[1] - best_points[0]);
+
+    // Calculate the rotation matrix between the two vectors
+    // https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
+    
+    cv::Vec3f v = GBL.cross(new_GBL);
+    float c = dot(GBL, new_GBL);
+
+    cv::Matx33f I{1, 0, 0,
+                  0, 1, 0,
+                  0, 0, 1};
+    
+    cv::Matx33f Vx{0,   -v[2], v[1],
+                   v[2], 0,   -v[0],
+                  -v[1], v[0], 0};
+    
+    cv::Matx33f R = I + Vx + (1 / (1 + c)) * Vx * Vx;
+
+    // With the rotation matrix found, we just need to find the translation
+    // To account for some errors, average the three
+    glove_trans_ = (best_points[0] - R * GREEN_POS +
+                   best_points[1] - R * BLUE_L_POS +
+                   best_points[2] - R * BLUE_R_POS) / 3;
+
+    // Convert rotation matrix to yaw, pitch, roll
+    glove_ypr_[0] = atan2(R.at(1, 0), R.at(0,0));
+    glove_ypr_[1] = atan2(-R.at(2, 0), 
+                           sqrt(pow(R.at(2, 1), 2) + pow(R.at(2,2), 2)));
+    glove_ypr_[2] = atan2(R.at(2,1), R.at(2, 2));
 }
 
 void LedTracker3D::find_pot_3d_points(std::vector<cv::Point3f> *green,
@@ -187,4 +240,46 @@ void LedTracker3D::find_pot_3d_points(std::vector<cv::Point3f> *green,
             }
         }
     }
+}
+
+float LedTracker3d::calculate_error(cv::Point3f green,
+                                    cv::Point3f blue_l,
+                                    cv::Point3f blue_r) {
+    // Calculate the length of each side of the triangle formed by 3 points
+    float sides[3];
+    
+    sides[0] = mag(green-blue_l);
+    sides[1] = mag(green-blue_r);
+    sides[2] = mag(blue_l - blue_r);
+
+    // Calculate the average error in lengths
+    float err = (sides[0] - GBL_LEN 
+              + sides[1] - GBR_LEN 
+              + sides[2] - BLBR_LEN) / 3.f;
+
+    return err;
+}
+
+void LedTracker3D::intersect_rays(cv::Vec3f l, 
+                                  cv::Vec3f r, 
+                                  cv::Point3f *center,
+                                  float *distance) {
+    // left starts at camera_pos_[0], right starts at camera_pos_[1]
+    cv::Vec3f c = l - r;
+    
+    // Calculate points on each line where the lines are closest
+    cv::Vec3f l_p = trackers_[0].pos;
+    l_p += ((dot(l, r)*dot(r, c) + dot(l, c)*dot(r, r))
+           / (dot(l, l)*dot(r, r) - dot(l, r)*dot(l, r))) * l;
+                    
+    cv::Vec3f r_p = trackers_[1].pos;
+    r_p += ((dot(l, r)*dot(l, c) + dot(r, c)*dot(l, l))
+           / (dot(l, l)*dot(r, r) - dot(l, r)*dot(l, r))) * r;
+
+    // Find vector between points
+    cv::Vec3f v = l_p - r_p;
+    
+    // Find distance and center point
+    *distance = mag(v);
+    *center = r_p + 0.5*v;
 }
