@@ -1,41 +1,18 @@
 #include "led_tracker_2d.hpp"
 
-LedTracker2D::LedTracker2D(float *params, unsigned int camera_num) 
-        :cam_(params[0], params[1], params[2], params[3],
-              params[4], params[5], params[6], params[7], 
-              camera_num) {
+LedTracker2D::LedTracker2D(float fu, float fv, float cu, float cv,
+                           float k1, float k2, float p1, float p2,
+                           unsigned int camera_num)
+        :cam_(fu, fv, cu, cv, k1, k2, p1, p2, camera_num) {
     // Raise error if camera failed to open
-    if(!camera_.isOpened()) {
-        throw std::runtime_error("A camera failed to open.\
-                                  \nAre both connected?");
+    if(!cam_.isOpened()) {
+        // Throw error in red
+        throw std::runtime_error("\033[31mA camera failed to open. Are both connected?\033[0m");
     }
 }
 
 LedTracker2D::~LedTracker2D() {
     // dtor
-}
-
-void LedTracker2D::loop() {
-    while(running_) {
-        // Get the camera images
-        update_images();
-
-        // Split and threshold each image
-        split_and_threshold_channels(&img_[0], hsv_[0]); 
-        split_and_threshold_channels(&img_[1], hsv_[1]);
-
-        // Update the thresholded contour list
-        update_contours();
-
-        // Update the contour hue-based weighting
-        update_hue_weighting();
-
-        // Update the contour position-based weighting
-        update_position_weighting();
-
-        // Pick the most likely candidates for the three LED positions
-        calculate_LED_positions();
-    }
 }
 
 std::vector<PotentialLed> LedTracker2D::get_points() {
@@ -59,7 +36,7 @@ std::vector<PotentialLed> LedTracker2D::get_points() {
         for(int i = 0; i < potential_leds_.size(); i++) {
             for(char j = 0; j < 3; j++) {
                 potential_leds_[i].total_weight[j] = 
-                        potential_leds_[i].hue_weight;
+                        potential_leds_[i].hue_weight[j];
             }
         }
     }
@@ -77,12 +54,12 @@ cv::Mat LedTracker2D::get_img() {
 
 void LedTracker2D::set_prev_leds(std::vector<PotentialLed> prev_leds) {
     for(char i = 0; i < 3; i++) {
-        if(prev_led_pos_[i])
+        if(prev_led_pos_[i] != cv::Point(0, 0))
             // Reduce noise by including previous estimations
             prev_led_pos_[i] = prev_leds[i].center * 0.7 
-                             + prev_led_pos[i] * 0.3;
+                             + prev_led_pos_[i] * 0.3;
         else
-            prev_led_pos[i] = prev_leds[i].center;
+            prev_led_pos_[i] = prev_leds[i].center;
     }
 }
 
@@ -92,14 +69,14 @@ void LedTracker2D::weigh_hue() {
         // Prevent overly large "LEDs" from slowing down the program
         // These are typically bright windows or ceiling lights etc.
         // Filter out tiny "LEDs" caused by background noise
-        if(potential_leds_[i].average_radius < 20 &&
-           potential_leds_[i].average_radius > 3) {
+        if(potential_leds_[i].avg_radius < 20 &&
+           potential_leds_[i].avg_radius > 3) {
             float size_mult;
             for(size_mult = CIRCLE_MULT_MIN;
                 size_mult <= CIRCLE_MULT_MAX;
                 size_mult += CIRCLE_MULT_STEP) {
                 
-                float r = potential_leds_[i].average_radius * size_mult;
+                float r = potential_leds_[i].avg_radius * size_mult;
                 
                 // Create a circular mask 
                 cv::Mat mask(cv::Size(2*r, 2*r), 
@@ -122,7 +99,7 @@ void LedTracker2D::weigh_hue() {
                 for(char col = 0; col < 2; col++) {
                     // Ignore this if the roi leaves the screen
                     try {
-                        roi = cv::Mat(hsv_[i][col], region);
+                        roi = cv::Mat(hsv_[col], region);
                     }
                     catch(cv::Exception) {
                         continue;
@@ -158,7 +135,7 @@ void LedTracker2D::weigh_hue() {
                 i--;
             }
             else {
-                // Copy the blue hue weight to the second led
+                // Copy the blue hue weight to the second blue led
                 potential_leds_[i].hue_weight[2] 
                         = potential_leds_[i].hue_weight[1];
             }
@@ -173,7 +150,9 @@ void LedTracker2D::weigh_hue() {
 
 bool LedTracker2D::weigh_pos() {
     // Check if we have position data yet
-    if(!prev_led_pos_[0] || !prev_led_pos_[1] || !prev_led_pos_[2]) {
+    if(prev_led_pos_[0] == cv::Point(0, 0) || 
+       prev_led_pos_[1] == cv::Point(0, 0) || 
+       prev_led_pos_[2] == cv::Point(0, 0)) {
         return false;
     }
 
@@ -185,10 +164,10 @@ bool LedTracker2D::weigh_pos() {
         // Compare the distance between the center 
         // and each previous point
         for(char i = 0; i < 3; i++) {
-            float dist = sqrt(pow(prev_led_pos_[i][0] 
-                                - potential_leds_[p].center[0], 2) +
-                              pow(prev_led_pos_[i][1]
-                                - potential_leds_[p].center[1], 2));
+            float dist = sqrt(pow(prev_led_pos_[i].x 
+                                - potential_leds_[p].center.x, 2) +
+                              pow(prev_led_pos_[i].y
+                                - potential_leds_[p].center.y, 2));
             if(dist < min_led_distance[i])
                 min_led_distance[i] = dist;
             potential_leds_[p].pos_weight[i] = dist;
@@ -213,8 +192,8 @@ bool LedTracker2D::weigh_pos() {
         }
 
         if(!above_thresh) {
-            potential_leds_.erase(potential_leds_.begin() + i);
-            i--;
+            potential_leds_.erase(potential_leds_.begin() + p);
+            p--;
         }
     }
 }
@@ -228,8 +207,8 @@ void LedTracker2D::combine_weights() {
         // Multiply position and colour weights to get total weight
         for(char j = 0; j < 3; j++) {
             potential_leds_[i].total_weight[j] = 
-                    potential_leds_[i].hue_weight 
-                  * potential_leds_[i].pos_weight;
+                    potential_leds_[i].hue_weight[j] 
+                  * potential_leds_[i].pos_weight[j];
             // Threshold
             if(potential_leds_[i].total_weight[j] >= MIN_TOTAL_WEIGHT)
                 above_thresh = true;
@@ -248,7 +227,7 @@ void LedTracker2D::find_contours() {
     cv::Mat buffer;
 
     // Compare overlapping saturation and value regions
-    cv::bitwise_and(hsv_[i][2], hsv_[i][3], buffer);
+    cv::bitwise_and(hsv_[2], hsv_[3], buffer);
 
     // Create temporary contours vector
     std::vector<std::vector<cv::Point>> contours;
@@ -288,15 +267,15 @@ void LedTracker2D::find_led_pos(PotentialLed * pl) {
     
     // Calculate the average radius as the average distance
     // from the centroid
-    pl->average_radius = 0;
-    for(int i = 0; i < contour.size(); i++) {
-        pl->average_radius += sqrt(
-            pow(contour[i].x - pl->center.x, 2) 
-          + pow(contour[i].y - pl->center.y, 2));
+    pl->avg_radius = 0;
+    for(int i = 0; i < pl->contour.size(); i++) {
+        pl->avg_radius += sqrt(
+            pow(pl->contour[i].x - pl->center.x, 2) 
+          + pow(pl->contour[i].y - pl->center.y, 2));
     }
-    pl->average_radius /= contour.size();
-    if(pl->average_radius < 1) {
-        pl->average_radius = 1;
+    pl->avg_radius /= pl->contour.size();
+    if(pl->avg_radius < 1) {
+        pl->avg_radius = 1;
     }
 }
 

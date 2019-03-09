@@ -30,21 +30,6 @@
 #define CIRCLE_MULT_STEP 0.1f
 
 
-// Rotation and translation of cameras in the world space
-
-#define LEFT_CAMERA_ROT cv::Matx33f(cos(-0.0872665), -sin(-0.0872665), 0, \
-                                    sin(-0.0872665), cos(-0.0872665) , 0, \
-                                    0              , 0               , 1) 
-
-#define RIGHT_CAMERA_ROT cv::Matx33f(cos(0.0872665) , -sin(0.0872665) , 0, \
-                                     sin(0.0872665) , cos(0.0872665)  , 0, \
-                                     0              , 0               , 1)
-
-#define LEFT_CAMERA_POS cv::Vec3f(-50, 0, 0)
-
-#define RIGHT_CAMERA_POS cv::Vec3f(50, 0, 0)
-
-
 // Minimum weighting for hue based weighting, below this is '0'
 
 #define MIN_HUE_WEIGHT 0.05
@@ -69,8 +54,8 @@
 
 // Potential LED struct represents a highlighted contour for consideration
 struct PotentialLed {
-    std::vector<cv::Point2f> contour;
-    cv::Point2f center;
+    std::vector<cv::Point> contour;
+    cv::Point center;
     float avg_radius;
     float hue_weight[3];
     float pos_weight[3];
@@ -80,7 +65,9 @@ struct PotentialLed {
 
 class LedTracker2D {
 public:
-    LedTracker2D(float *params, unsigned int camera_num);
+    LedTracker2D(float fu, float fv, float cu, float cv,
+           float k1, float k2, float p1, float p2,
+           unsigned int camera_num);
     ~LedTracker2D();
 
     // Get the potential leds for the current image
@@ -115,6 +102,12 @@ private:
 
     // Update the rays of the potential LEDs
     void update_rays();
+
+    // Find the position of a potential led given its contour
+    void find_led_pos(PotentialLed *pl);
+
+    // Split and threshold channels from the image into hsv
+    void split_and_threshold_channels();
 
     // Camera and accompanying image
     Camera cam_;

@@ -12,29 +12,44 @@
 
 // LED positions and magnitudes
 
-#define GREEN_POS cv::Point3f(0, 0, 0);
-#define BLUE_L_POS cv::Point3f(0, 0, 0);
-#define BLUE_R_POS cv::Point3f(0, 0, 0);
+#define GREEN_POS cv::Point3f(0, 0, 0)
+#define BLUE_L_POS cv::Point3f(0, 0, 0)
+#define BLUE_R_POS cv::Point3f(0, 0, 0)
 
-#define GBL_LEN mag(GREEN_POS - BLUE_L_POS);
-#define GBR_LEN mag(GREEN_POS - BLUE_R_POS);
-#define BLBR_LEN mag(BLUE_L_POS - BLUE_R_POS);
+#define GBL_LEN mag(GREEN_POS - BLUE_L_POS)
+#define GBR_LEN mag(GREEN_POS - BLUE_R_POS)
+#define BLBR_LEN mag(BLUE_L_POS - BLUE_R_POS)
 
 // Camera callibration data for initialising cameras
 // For now the same callibration numbers seem to work for both cameras
 // Left camera is the first camera, right camera is the second
 
-#define LEFT_CAMERA_PARAMS { 722.106766, 723.389819, \
+#define LEFT_CAMERA_PARAMS   722.106766, 723.389819, \
                              344.447625, 271.702332, \
                              -0.430658, 0.235174, \
-                             0.000098, -0.000494 }, \
+                             0.000098, -0.000494 , \
                              1
 
-#define RIGHT_CAMERA_PARAMS { 722.106766, 723.389819, \
-                              344.447625, 271.702332, \
-                              -0.430658, 0.235174, \
-                              0.000098, -0.000494 }, \
-                              2
+#define RIGHT_CAMERA_PARAMS  722.106766, 723.389819, \
+                             344.447625, 271.702332, \
+                             -0.430658, 0.235174, \
+                             0.000098, -0.000494 , \
+                             2
+
+
+// Rotation and translation of cameras in the world space
+
+#define LEFT_CAMERA_ROT cv::Matx33f(cos(-0.0872665), -sin(-0.0872665), 0, \
+                                    sin(-0.0872665), cos(-0.0872665) , 0, \
+                                    0              , 0               , 1) 
+
+#define RIGHT_CAMERA_ROT cv::Matx33f(cos(0.0872665) , -sin(0.0872665) , 0, \
+                                     sin(0.0872665) , cos(0.0872665)  , 0, \
+                                     0              , 0               , 1)
+
+#define LEFT_CAMERA_POS cv::Vec3f(-50, 0, 0)
+
+#define RIGHT_CAMERA_POS cv::Vec3f(50, 0, 0)
 
 class LedTracker3D {
 public:
@@ -69,9 +84,9 @@ private:
     
     // Find potential 3d points given the green and blue leds
     void find_pot_3d_points(std::vector<cv::Point3f> *green,
-                            std::vector<int*> *green_its,
+                            std::vector<std::array<int, 2>> *green_its,
                             std::vector<cv::Point3f> *blue,
-                            std::vector<int*> blue_its); 
+                            std::vector<std::array<int, 2>> *blue_its); 
 
     // Most recent images
     cv::Mat imgs_[2];

@@ -11,9 +11,14 @@ float mag(cv::Vec3f a) {
 LedTracker3D::LedTracker3D() 
         :thread_(&LedTracker3D::loop, this), 
          running_(true),
-         trackers_{ Ledtracker2D(LEFT_CAMERA_PARAMS), 
+         trackers_{ LedTracker2D(LEFT_CAMERA_PARAMS), 
                     LedTracker2D(RIGHT_CAMERA_PARAMS) } {
-    // ctor
+    // Set position and rotation of the cameras
+    trackers_[0].pos = LEFT_CAMERA_POS;
+    trackers_[0].rot = LEFT_CAMERA_ROT;
+
+    trackers_[1].pos = RIGHT_CAMERA_POS;
+    trackers_[1].pos = RIGHT_CAMERA_POS;
 }
 
 LedTracker3D::~LedTracker3D() {
@@ -21,7 +26,7 @@ LedTracker3D::~LedTracker3D() {
 
     // Tell thread to stop running and wait for it to finish cleanly
     running_ = false;
-    loop_thread_.join();
+    thread_.join();
 
     std::cout << "\t\t[\033[1;32mOK\0330m]" << std::endl;
 }
@@ -82,7 +87,10 @@ void LedTracker3D::loop() {
         left_thread->join();
         right_thread->join();
 
-        // Obtain lock on potential LEDS
+        // Pass the identified points to the 2d trackers
+        // so that they may update position weighting
+        trackers_[0].set_prev_leds(pot_leds_[0]);
+        trackers_[1].set_prev_leds(pot_leds_[1]);
     }
     
     // Clean up memory
@@ -92,10 +100,12 @@ void LedTracker3D::loop() {
 
 void LedTracker3D::find_glove_pos() {
     // Vectors of 3d points split into two colours
+    // Access with points[g=0/b=1][point]
     std::vector<cv::Point3f> points[2];
 
     // Reference to which pot_led we're looking at
-    std::vector<int*> point_its[3];
+    // Access with point_its[g=0/b=1][point][l=0/r=1]
+    std::vector<std::array<int, 2>> point_its[2];
     
     // Find the list of 3d points
     find_pot_3d_points(&points[0], &point_its[0], 
@@ -114,19 +124,19 @@ void LedTracker3D::find_glove_pos() {
     for(int i = 0; i < points[0].size(); i++) {
         for(int j = 0; j < points[1].size(); i++) {
             // If the point has a large enough threshold to be on the left
-            if(pot_leds_[0][*(point_its[j][0])].total_weight[1] >=
+            if(pot_leds_[1][point_its[1][j][0]].total_weight[1] >=
                MIN_TOTAL_WEIGHT                              || 
-               pot_leds_[1][*(point_its[j][1])].total_weight[1] >= 
+               pot_leds_[1][point_its[1][j][1]].total_weight[1] >= 
                MIN_TOTAL_WEIGHT) {
-                for(int k = 0; k < points[1].size() {
+                for(int k = 0; k < points[1].size(); k++) {
                     // Ignore duplicate points
                     if(k == j) 
                         continue;
 
                     // Ignore points not possibly on the right
-                    if(pot_leds_[0][*(point_its[k][0])].total_weight[2] <
+                    if(pot_leds_[1][point_its[1][k][0]].total_weight[2] <
                        MIN_TOTAL_WEIGHT                              || 
-                       pot_leds_[1][*(point_its[k][1])].total_weight[2] < 
+                       pot_leds_[1][point_its[1][k][1]].total_weight[2] < 
                        MIN_TOTAL_WEIGHT)
                         continue;
                     
@@ -138,7 +148,9 @@ void LedTracker3D::find_glove_pos() {
                     // Update best solution
                     if(e < err) {
                         err = e;
-                        err_its = {i, j, k};
+                        err_its[0] = i; 
+                        err_its[1] = j; 
+                        err_its[2] = k;
                     }
                 }
             }
@@ -157,9 +169,9 @@ void LedTracker3D::find_glove_pos() {
     best_points[2] = points[1][err_its[2]];
 
     // Calculate the vector G->B)L
-    cv::Vec3f GBL = cv::Vec3f(BLUE_L_POS - GREEN_POS);
+    cv::Vec3f GBL(BLUE_L_POS - GREEN_POS);
     // Calculate the new vector G'->BL'
-    cv::Vec3f new_GBL = cv::Vec3f(best_points[1] - best_points[0]);
+    cv::Vec3f new_GBL(best_points[1] - best_points[0]);
 
     // Calculate the rotation matrix between the two vectors
     // https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
@@ -179,21 +191,35 @@ void LedTracker3D::find_glove_pos() {
 
     // With the rotation matrix found, we just need to find the translation
     // To account for some errors, average the three
-    glove_trans_ = (best_points[0] - R * GREEN_POS +
+    glove_pos_ = (best_points[0] - R * GREEN_POS +
                    best_points[1] - R * BLUE_L_POS +
                    best_points[2] - R * BLUE_R_POS) / 3;
 
     // Convert rotation matrix to yaw, pitch, roll
-    glove_ypr_[0] = atan2(R.at(1, 0), R.at(0,0));
-    glove_ypr_[1] = atan2(-R.at(2, 0), 
-                           sqrt(pow(R.at(2, 1), 2) + pow(R.at(2,2), 2)));
-    glove_ypr_[2] = atan2(R.at(2,1), R.at(2, 2));
+    glove_ypr_.x = atan2(R(1, 0), R(0,0));
+    glove_ypr_.y = atan2(-R(2, 0), 
+                           sqrt(pow(R(2, 1), 2) + pow(R(2,2), 2)));
+    glove_ypr_.z = atan2(R(2,1), R(2, 2));
+
+    // Delete potential leds that were not chosen
+    for(char i = 0; i < 2; i++) {
+        for(int p = 0; p < pot_leds_[i].size(); p++) {
+            if(p != point_its[0][err_its[0]][i] &&
+               p != point_its[1][err_its[1]][i] &&
+               p != point_its[1][err_its[2]][i]) {
+                pot_leds_[i].erase(pot_leds_[i].begin() + p);
+                p--;
+            }
+        }
+    }
+
+
 }
 
 void LedTracker3D::find_pot_3d_points(std::vector<cv::Point3f> *green,
-                                      std::vector<int*> *green_its,
-                                      std::vector<cv::Point3f> *blue
-                                      std::vector<int*> blue_its) {
+                                      std::vector<std::array<int, 2>> *green_its,
+                                      std::vector<cv::Point3f> *blue,
+                                      std::vector<std::array<int, 2>> *blue_its) {
     // Loop through each combination of contours to find best match
     for(int i = 0; i < pot_leds_[0].size(); i++) {
         for(int j = 0; j < pot_leds_[1].size(); j++) {
@@ -213,12 +239,16 @@ void LedTracker3D::find_pot_3d_points(std::vector<cv::Point3f> *green,
                 // Both contours are green
                 
                 // Find intersection point
-                cv::Point3f c = intersect_rays(pot_leds_[0].ray, 
-                                               pot_leds_[1].ray);
+                float dist;
+                cv::Point3f c;
+                intersect_rays(pot_leds_[0][i].ray, 
+                               pot_leds_[1][j].ray,
+                               &c,
+                               &dist);
                 
                 // Store the result
                 green->push_back(c);
-                green_its.push_back({i, j});
+                green_its->push_back({{i, j}});
             }
             // left is blue
             else {
@@ -231,18 +261,22 @@ void LedTracker3D::find_pot_3d_points(std::vector<cv::Point3f> *green,
                 // Both contours are blue
                 
                 // Find intersection point
-                cv::Point3f c = intersect_rays(pot_leds_[0].ray, 
-                                               pot_leds_[1].ray);
+                float dist;
+                cv::Point3f c;
+                intersect_rays(pot_leds_[0][i].ray, 
+                               pot_leds_[1][j].ray,
+                               &c,
+                               &dist);
                 
                 // Store the result
                 blue->push_back(c);
-                blue_its.push_back({i, j});
+                blue_its->push_back({{i, j}});
             }
         }
     }
 }
 
-float LedTracker3d::calculate_error(cv::Point3f green,
+float LedTracker3D::calculate_error(cv::Point3f green,
                                     cv::Point3f blue_l,
                                     cv::Point3f blue_r) {
     // Calculate the length of each side of the triangle formed by 3 points
