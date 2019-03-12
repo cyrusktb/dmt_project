@@ -23,20 +23,19 @@ LedTracker3D::LedTracker3D()
 
 LedTracker3D::~LedTracker3D() {
     std::cout << "Shutting down \033[31mLedTracker3D\033[0m...";
-
     // Tell thread to stop running and wait for it to finish cleanly
     running_ = false;
     thread_.join();
 
-    std::cout << "\t\t[\033[1;32mOK\0330m]" << std::endl;
+    std::cout << "\t\t[\033[1;32mOK\033[0m]" << std::endl;
 }
 
 void LedTracker3D::get_imgs(cv::Mat &left, cv::Mat &right) {
     // Prevent images being changed mid-copy
     std::lock_guard<std::mutex> lock(img_mutex_);
     
-    left = imgs_[0];
-    right = imgs_[1];
+    imgs_[0].copyTo(left);
+    imgs_[1].copyTo(right);
 }
 
 void LedTracker3D::get_glove_pos(cv::Point3f &pos, cv::Point3f &ypr) {
@@ -46,16 +45,22 @@ void LedTracker3D::get_glove_pos(cv::Point3f &pos, cv::Point3f &ypr) {
 
 void LedTracker3D::loop() {
     // Create lambda to pass to threads easily
-    auto data_func = [this](short tracker_num){
+    auto data_func = [this](short tracker_num) {
         // Get the next frame's set of points for processing
         auto new_pot_leds = this->trackers_[tracker_num].get_points();
-        
+
         // Wait for the current set to be obsolete before overwriting
         std::lock_guard<std::mutex> lock(this->pot_mutex_);
 
         // Overwrite
         this->pot_leds_[tracker_num].clear();
         this->pot_leds_[tracker_num] = new_pot_leds;
+
+        // Prevent images being copied mid change
+        std::lock_guard<std::mutex> lock_img(img_mutex_);
+
+        // Update image
+        trackers_[tracker_num].get_img(imgs_[tracker_num]);
     };
 
     // Create a thread for each 2d tracker, running the above lambdas
@@ -113,7 +118,7 @@ void LedTracker3D::find_glove_pos() {
     
     // Consider the posibility of no points of the 
     // correct colour on the screen
-    if(!points[0].size() && !points[1].size())
+    if(!points[0].size() || !points[1].size())
         return;
 
     // Find the combination with the least error
@@ -122,7 +127,7 @@ void LedTracker3D::find_glove_pos() {
 
     // Loop through each combination of LEDs
     for(int i = 0; i < points[0].size(); i++) {
-        for(int j = 0; j < points[1].size(); i++) {
+        for(int j = 0; j < points[1].size(); j++) {
             // If the point has a large enough threshold to be on the left
             if(pot_leds_[1][point_its[1][j][0]].total_weight[1] >=
                MIN_TOTAL_WEIGHT                              || 
@@ -158,7 +163,6 @@ void LedTracker3D::find_glove_pos() {
             // will be compared with other potential lefts above
         }
     }
-
     // Calculate the pose of the triangle made by the three points
     // We want to find a matrix T such that T*G0 = G, T*B_L0 = B_L 
     // and T*B_R0 = B_R
@@ -172,7 +176,7 @@ void LedTracker3D::find_glove_pos() {
     cv::Vec3f GBL(BLUE_L_POS - GREEN_POS);
     // Calculate the new vector G'->BL'
     cv::Vec3f new_GBL(best_points[1] - best_points[0]);
-
+    
     // Calculate the rotation matrix between the two vectors
     // https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
     
@@ -212,7 +216,6 @@ void LedTracker3D::find_glove_pos() {
             }
         }
     }
-
 
 }
 

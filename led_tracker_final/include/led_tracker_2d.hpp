@@ -74,7 +74,7 @@ public:
     std::vector<PotentialLed> get_points();
     
     // Get the most recent image
-    cv::Mat get_img();
+    void get_img(cv::Mat &img);
 
     // Say which leds were chosen to be kept
     void set_prev_leds(std::vector<PotentialLed> prev_leds);

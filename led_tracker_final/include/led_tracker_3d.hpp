@@ -12,8 +12,8 @@
 
 // LED positions and magnitudes
 
-#define GREEN_POS cv::Point3f(0, 0, 0)
-#define BLUE_L_POS cv::Point3f(0, 0, 0)
+#define GREEN_POS cv::Point3f(0.007, 0.033, 0)
+#define BLUE_L_POS cv::Point3f(0.038, 0, 0)
 #define BLUE_R_POS cv::Point3f(0, 0, 0)
 
 #define GBL_LEN mag(GREEN_POS - BLUE_L_POS)
@@ -28,13 +28,13 @@
                              344.447625, 271.702332, \
                              -0.430658, 0.235174, \
                              0.000098, -0.000494 , \
-                             1
+                             0
 
 #define RIGHT_CAMERA_PARAMS  722.106766, 723.389819, \
                              344.447625, 271.702332, \
                              -0.430658, 0.235174, \
                              0.000098, -0.000494 , \
-                             2
+                             1
 
 
 // Rotation and translation of cameras in the world space
@@ -47,9 +47,9 @@
                                      sin(0.0872665) , cos(0.0872665)  , 0, \
                                      0              , 0               , 1)
 
-#define LEFT_CAMERA_POS cv::Vec3f(-50, 0, 0)
+#define LEFT_CAMERA_POS cv::Vec3f(-0.1, 0, 0)
 
-#define RIGHT_CAMERA_POS cv::Vec3f(50, 0, 0)
+#define RIGHT_CAMERA_POS cv::Vec3f(0.1, 0, 0)
 
 class LedTracker3D {
 public:

@@ -48,11 +48,19 @@ std::vector<PotentialLed> LedTracker2D::get_points() {
     return potential_leds_;
 }
 
-cv::Mat LedTracker2D::get_img() {
-    return img_;
+void LedTracker2D::get_img(cv::Mat &img) {
+    img_.copyTo(img);
 }
 
 void LedTracker2D::set_prev_leds(std::vector<PotentialLed> prev_leds) {
+    if(prev_leds.size() < 3) {
+        // Set all to zero, we don't have enough data to perform
+        // position based estimation
+        prev_led_pos_[0] = cv::Point(0, 0);
+        prev_led_pos_[1] = cv::Point(0, 0);
+        prev_led_pos_[2] = cv::Point(0, 0);
+        return;
+    }
     for(char i = 0; i < 3; i++) {
         if(prev_led_pos_[i] != cv::Point(0, 0))
             // Reduce noise by including previous estimations
@@ -82,10 +90,19 @@ void LedTracker2D::weigh_hue() {
                 cv::Mat mask(cv::Size(2*r, 2*r), 
                              CV_8U, 
                              cv::Scalar(0));
+                // Outer cicle is all 255
                 cv::circle(mask,
                            cv::Point2d(r, r),
                            r,
                            cv::Scalar(255),
+                           -1,
+                           cv::LINE_AA);
+                // Inner circle is all 0 as this will be the wrong hue
+                // due to the excessive saturation and value
+                cv::circle(mask,
+                           cv::Point2d(r, r),
+                           potential_leds_[i].avg_radius,
+                           cv::Scalar(0),
                            -1,
                            cv::LINE_AA);
 
@@ -101,7 +118,7 @@ void LedTracker2D::weigh_hue() {
                     try {
                         roi = cv::Mat(hsv_[col], region);
                     }
-                    catch(cv::Exception) {
+                    catch(cv::Exception e) {
                         continue;
                     }
                     
@@ -149,6 +166,7 @@ void LedTracker2D::weigh_hue() {
 }
 
 bool LedTracker2D::weigh_pos() {
+    return false;
     // Check if we have position data yet
     if(prev_led_pos_[0] == cv::Point(0, 0) || 
        prev_led_pos_[1] == cv::Point(0, 0) || 
@@ -247,6 +265,9 @@ void LedTracker2D::find_contours() {
 
         // Store the contour
         potential_leds_.back().contour = contours[i];
+        
+        // Calculate average radius and position
+        find_led_pos(&potential_leds_.back());
     }
 }
 
@@ -254,7 +275,6 @@ void LedTracker2D::update_rays() {
     // Loop through the potential LEDs and calculate the ray for this LED
     for(int i = 0; i < potential_leds_.size(); i++) {
         potential_leds_[i].ray = cam_.get_ray(potential_leds_[i].center);
-        find_led_pos(&potential_leds_[i]);
     }
 }
 
