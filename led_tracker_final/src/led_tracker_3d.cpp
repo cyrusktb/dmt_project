@@ -8,6 +8,7 @@ float dot(cv::Vec3f a, cv::Vec3f b) {
 float mag(cv::Vec3f a) {
     return sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
 }
+
 LedTracker3D::LedTracker3D() 
         :thread_(&LedTracker3D::loop, this), 
          running_(true),
@@ -243,14 +244,18 @@ void LedTracker3D::find_pot_3d_points(std::vector<cv::Point3f> *green,
                 
                 // Find intersection point
                 float dist;
-                cv::Point3f c;
+                cv::Point3f *c = new cv::Point3f;
                 intersect_rays(pot_leds_[0][i].ray, 
                                pot_leds_[1][j].ray,
-                               &c,
+                               c,
                                &dist);
+
+                // If the result is invalid, or dist is too large, ignore
+                if(!c || dist > INTERSECTION_TOLERANCE)
+                    continue;
                 
                 // Store the result
-                green->push_back(c);
+                green->push_back(*c);
                 green_its->push_back({{i, j}});
             }
             // left is blue
@@ -265,14 +270,18 @@ void LedTracker3D::find_pot_3d_points(std::vector<cv::Point3f> *green,
                 
                 // Find intersection point
                 float dist;
-                cv::Point3f c;
+                cv::Point3f *c = new cv::Point3f;
                 intersect_rays(pot_leds_[0][i].ray, 
                                pot_leds_[1][j].ray,
-                               &c,
+                               c,
                                &dist);
-                
+
+                // If the result is invalid, or dist is too large, ignore
+                if(!c || dist > INTERSECTION_TOLERANCE)
+                    continue;
+
                 // Store the result
-                blue->push_back(c);
+                blue->push_back(*c);
                 blue_its->push_back({{i, j}});
             }
         }
@@ -301,22 +310,68 @@ void LedTracker3D::intersect_rays(cv::Vec3f l,
                                   cv::Vec3f r, 
                                   cv::Point3f *center,
                                   float *distance) {
-    // left starts at camera_pos_[0], right starts at camera_pos_[1]
-    cv::Vec3f c = l - r;
-    
-    // Calculate points on each line where the lines are closest
-    cv::Vec3f l_p = trackers_[0].pos;
-    l_p += ((dot(l, r)*dot(r, c) + dot(l, c)*dot(r, r))
-           / (dot(l, l)*dot(r, r) - dot(l, r)*dot(l, r))) * l;
-                    
-    cv::Vec3f r_p = trackers_[1].pos;
-    r_p += ((dot(l, r)*dot(l, c) + dot(r, c)*dot(l, l))
-           / (dot(l, l)*dot(r, r) - dot(l, r)*dot(l, r))) * r;
+    // l_start + mu_l * l ~= r_start + mu_l * r
+    cv::Point3f mu_l, mu_r;
+    float mu_l_fl, mu_r_fl;
 
-    // Find vector between points
-    cv::Vec3f v = l_p - r_p;
+    // Get starting points
+    cv::Point3f l_start, r_start;
+    l_start = trackers_[0].pos;
+    r_start = trackers_[1].pos;
+
+    // Normalise vectors
+    l /= mag(l);
+    r /= mag(r);
+
+    // Larger than this is considered infinite
+    float max_mu = 100;
+
+    // Calculate mu_r for each axis
+    mu_r.x = (l_start.x * (1 - l[0]) - r_start.x * (1 - r[0])) 
+           / (r[0] * (1  - l[0]));
+    mu_r.y = (l_start.y * (1 - l[1]) - r_start.y * (1 - r[1])) 
+           / (r[1] * (1 - l[1]));
+    mu_r.z = (l_start.z * (1 - l[2]) - r_start.z * (1 - r[2])) 
+           / (r[2] * (1 - l[2]));
+
+    // Check that values are non-infinite before continuing
+    if(isfinite(mu_r.x) && fabs(mu_r.x) < max_mu)
+        mu_r_fl = mu_r.x;
+    else if(isfinite(mu_r.y) && fabs(mu_r.y) < max_mu)
+        mu_r_fl = mu_r.y;
+    else if(isfinite(mu_r.z) && fabs(mu_r.z) < max_mu)
+        mu_r_fl = mu_r.z;
+    else {
+        std::cout << "None of mu_r is finite" << std::endl;
+        // Result is undefined so return
+        return;
+    }
+
+    // As above but for mu_l
+    mu_l.x = (r_start.x + mu_r_fl*r[0] - l_start.x) / l[0];
+    mu_l.y = (r_start.y + mu_r_fl*r[1] - l_start.y) / l[1];
+    mu_l.z = (r_start.z + mu_r_fl*r[2] - l_start.z) / l[2];
+
+    // Ignore infinite, NaN or excessively large values
+    if(isfinite(mu_l.x) && fabs(mu_l.x) < max_mu)
+        mu_l_fl = mu_l.x;
+    else if(isfinite(mu_l.y) && fabs(mu_l.y) < max_mu)
+        mu_l_fl = mu_l.y;
+    else if(isfinite(mu_l.z) && fabs(mu_l.z) < max_mu)
+        mu_l_fl = mu_l.z;
+    else {
+        std::cout << "None of mu_l is finite" << std::endl;
+        // Result is undefined so return
+        return;
+    }
     
-    // Find distance and center point
-    *distance = mag(v);
-    *center = r_p + 0.5*v;
+    std::cout << "mu_l: " << mu_l << std::endl;
+    std::cout << "mu_r: " << mu_r << std::endl;
+
+    // Caculate center
+    cv::Point3f l_p, r_p;
+    l_p = l_start + cv::Point3f(mu_l_fl * l);
+    r_p = r_start + cv::Point3f(mu_r_fl * r);
+    *distance = mag(r_p - l_p);
+    *center = (r_p + l_p) / 2;
 }

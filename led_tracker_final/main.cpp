@@ -1,6 +1,6 @@
 #include "led_tracker_3d.hpp"
 
-#define _3DTEST
+#define _2DTEST
 
 int main(int argc, char **argv) {
     cv::Mat left, right;

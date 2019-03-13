@@ -20,6 +20,12 @@
 #define GBR_LEN mag(GREEN_POS - BLUE_R_POS)
 #define BLBR_LEN mag(BLUE_L_POS - BLUE_R_POS)
 
+
+// Maximum distance for an intersection to be considered an intersection
+
+#define INTERSECTION_TOLERANCE 5
+
+
 // Camera callibration data for initialising cameras
 // For now the same callibration numbers seem to work for both cameras
 // Left camera is the first camera, right camera is the second
