@@ -53,9 +53,9 @@
                                      sin(0.0872665) , cos(0.0872665)  , 0, \
                                      0              , 0               , 1)
 
-#define LEFT_CAMERA_POS cv::Vec3f(-0.1, 0, 0)
+#define LEFT_CAMERA_POS cv::Vec3f(-0.1, 0.01763, 0)
 
-#define RIGHT_CAMERA_POS cv::Vec3f(0.1, 0, 0)
+#define RIGHT_CAMERA_POS cv::Vec3f(0.1, 0.01763, 0)
 
 class LedTracker3D {
 public:
