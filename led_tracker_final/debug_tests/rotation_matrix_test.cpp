@@ -83,14 +83,14 @@ float calc_angle(cv::Vec3f axis, cv::Vec3f A, cv::Vec3f B) {
                     if(fabs(
                         res[3*i] / res[3*i+2] 
                       - res[3*j] / res[3*j+2]
-                       ) < 1e-2) {
+                       ) < 1e-1) {
                         theta = 2*atan2(res[3*i], res[3*i+2]);
                         theta_found = true;
                     }
                     else if(fabs(
                         res[3*i+1] / res[3*i+2] 
                       - res[3*j+1] / res[3*j+2]
-                       ) < 1e-2) {
+                       ) < 1e-1) {
                         theta = 2*atan2(res[3*i+1], res[3*i+2]);
                         theta_found = true;
                     }
@@ -205,10 +205,10 @@ void get_rotation_matrix(cv::Matx33f &rot,
 int main() {
     // Create arbitrary first triangle
     Triangle a;
-    a.A.x = 0; a.A.y = 10; a.A.z = 5;
-    a.B.x = -4; a.B.y = 3.2; a.B.z = 1.1157;
-    a.C.x = 1; a.C.y = 1; a.C.z = -3;
-
+    a.A.x = 0.007; a.A.y = 0.033; a.A.z = 0;
+    a.B.x = 0.038; a.B.y = 0; a.B.z = 0;
+    a.C.x = 0; a.C.y = 0; a.C.z = 0;
+/*
     // Create arbitrary rotation matrix
     cv::Matx33f rot = { cos(0.3f), sin(0.3f), 0,
                         -sin(0.3f), cos(0.3f), 0,
@@ -222,13 +222,17 @@ int main() {
 
     std::cout << "A:\n" << a.A << "\n" << a.B << "\n" << a.C << "\n\n";
     std::cout << "B:\n" << b.A << "\n" << b.B << "\n" << b.C << std::endl;
-
+*/
+    Triangle b;
+    b.A.x = 0.05305; b.A.y = -0.09596; b.A.z = 0.6455;
+    b.B.x = 0.01035; b.B.y = -0.05022; b.B.z = 0.6601;
+    b.C.x = 0.06125; b.C.y = -0.0487; b.C.z = 0.6415;
     // Calculate rotation matrix and compare with known result
     cv::Matx33f rot_calc;
     get_rotation_matrix(rot_calc, b, a);
 
     std::cout << "Calculated:\n" << rot_calc 
-              << "\nCorrect:\n" << rot 
-              << "\nError:\n" << rot - rot_calc
+              //<< "\nCorrect:\n" << rot 
+              //<< "\nError:\n" << rot - rot_calc
               << std::endl << std::endl;
 }
