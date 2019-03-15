@@ -1,14 +1,5 @@
 #include "led_tracker_3d.hpp"
 
-// Useful vector functions
-float dot(cv::Vec3f a, cv::Vec3f b) {
-    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
-}
-
-float mag(cv::Vec3f a) {
-    return sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
-}
-
 LedTracker3D::LedTracker3D() 
         :thread_(&LedTracker3D::loop, this), 
          running_(true),
@@ -19,7 +10,7 @@ LedTracker3D::LedTracker3D()
     trackers_[0].rot = LEFT_CAMERA_ROT;
 
     trackers_[1].pos = RIGHT_CAMERA_POS;
-    trackers_[1].pos = RIGHT_CAMERA_POS;
+    trackers_[1].rot = RIGHT_CAMERA_ROT;
 }
 
 LedTracker3D::~LedTracker3D() {
@@ -72,6 +63,11 @@ void LedTracker3D::loop() {
     left_thread->join();
     right_thread->join();
 
+    time_t time_;
+    time(&time_);
+    srand(time_);
+
+
     // Loop until told to stop to allow us to exit cleanly
     while(running_) {
         // Create lock to prevent threads from finishing before we finish
@@ -85,6 +81,17 @@ void LedTracker3D::loop() {
 
         // Find the position of the glove from the previous data set
         find_glove_pos();
+
+        // Draw circles on chosen leds (for debugging)
+        for(char i = 0; i < 2; i++) {
+            for(char j = 0; j < pot_leds_[i].size(); j++) {
+                cv::circle(imgs_[i],
+                           pot_leds_[i][j].center,
+                           5,
+                           cv::Scalar(100, 100, 255),
+                           2);
+            }
+        }
 
         // Release the lock
         lock.unlock();
@@ -173,26 +180,19 @@ void LedTracker3D::find_glove_pos() {
     best_points[1] = points[1][err_its[1]];
     best_points[2] = points[1][err_its[2]];
 
-    // Calculate the vector G->B)L
-    cv::Vec3f GBL(BLUE_L_POS - GREEN_POS);
-    // Calculate the new vector G'->BL'
-    cv::Vec3f new_GBL(best_points[1] - best_points[0]);
-    
-    // Calculate the rotation matrix between the two vectors
-    // https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
-    
-    cv::Vec3f v = GBL.cross(new_GBL);
-    float c = dot(GBL, new_GBL);
+    Triangle glove_tri;
+    glove_tri.A = best_points[0];
+    glove_tri.B = best_points[1];
+    glove_tri.C = best_points[2];
 
-    cv::Matx33f I{1, 0, 0,
-                  0, 1, 0,
-                  0, 0, 1};
-    
-    cv::Matx33f Vx{0,   -v[2], v[1],
-                   v[2], 0,   -v[0],
-                  -v[1], v[0], 0};
-    
-    cv::Matx33f R = I + Vx + (1 / (1 + c)) * Vx * Vx;
+    Triangle origin_tri;
+    origin_tri.A = GREEN_POS;
+    origin_tri.B = BLUE_L_POS;
+    origin_tri.C = BLUE_R_POS;
+
+    // Calculate the rotation matrix
+    cv::Matx33f R;
+    get_rotation_matrix(R, origin_tri, glove_tri);
 
     // With the rotation matrix found, we just need to find the translation
     // To account for some errors, average the three
@@ -206,18 +206,20 @@ void LedTracker3D::find_glove_pos() {
                            sqrt(pow(R(2, 1), 2) + pow(R(2,2), 2)));
     glove_ypr_.z = atan2(R(2,1), R(2, 2));
 
+    std::vector<PotentialLed> kept_pot_leds_[2];
+
     // Delete potential leds that were not chosen
     for(char i = 0; i < 2; i++) {
         for(int p = 0; p < pot_leds_[i].size(); p++) {
-            if(p != point_its[0][err_its[0]][i] &&
-               p != point_its[1][err_its[1]][i] &&
-               p != point_its[1][err_its[2]][i]) {
-                pot_leds_[i].erase(pot_leds_[i].begin() + p);
-                p--;
+            if(p == point_its[0][err_its[0]][i] ||
+               p == point_its[1][err_its[1]][i] ||
+               p == point_its[1][err_its[2]][i]) {
+                kept_pot_leds_[i].push_back(pot_leds_[i][p]);
             }
         }
     }
-
+    pot_leds_[0] = kept_pot_leds_[0];
+    pot_leds_[1] = kept_pot_leds_[1];
 }
 
 void LedTracker3D::find_pot_3d_points(std::vector<cv::Point3f> *green,
@@ -227,6 +229,27 @@ void LedTracker3D::find_pot_3d_points(std::vector<cv::Point3f> *green,
     // Loop through each combination of contours to find best match
     for(int i = 0; i < pot_leds_[0].size(); i++) {
         for(int j = 0; j < pot_leds_[1].size(); j++) {
+            // Find intersection point
+            float dist;
+            cv::Point3f *c = new cv::Point3f;
+            intersect_rays(pot_leds_[0][i].ray, 
+                           pot_leds_[1][j].ray,
+                           c,
+                           &dist);
+
+            // If the result is invalid, or dist is too large, ignore
+            if(!c || dist > INTERSECTION_TOLERANCE || c->z < 0)
+                continue;
+            
+            cv::Scalar col(rand() % 255, rand() % 255, rand() % 255);
+
+            // Store the result
+            green->push_back(*c);
+            green_its->push_back({{i, j}});
+            
+            blue->push_back(*c);
+            blue_its->push_back({{i, j}});
+/*
             // Check that both contours are the same colour
 
             // left is green
@@ -251,9 +274,22 @@ void LedTracker3D::find_pot_3d_points(std::vector<cv::Point3f> *green,
                                &dist);
 
                 // If the result is invalid, or dist is too large, ignore
-                if(!c || dist > INTERSECTION_TOLERANCE)
+                if(!c || dist > INTERSECTION_TOLERANCE || c->z < 0)
                     continue;
                 
+                cv::Scalar col(rand() % 255, rand() % 255, rand() % 255);
+
+                cv::circle(imgs_[0],
+                           pot_leds_[0][i].center,
+                           5,
+                           col,
+                           2);
+                cv::circle(imgs_[1],
+                           pot_leds_[1][j].center,
+                           5,
+                           col,
+                           2);
+
                 // Store the result
                 green->push_back(*c);
                 green_its->push_back({{i, j}});
@@ -277,13 +313,26 @@ void LedTracker3D::find_pot_3d_points(std::vector<cv::Point3f> *green,
                                &dist);
 
                 // If the result is invalid, or dist is too large, ignore
-                if(!c || dist > INTERSECTION_TOLERANCE)
+                if(!c || dist > INTERSECTION_TOLERANCE || c->z < 0)
                     continue;
+                
+                cv::Scalar col(rand() % 255, rand() % 255, rand() % 255);
+
+                cv::circle(imgs_[0],
+                           pot_leds_[0][i].center,
+                           5,
+                           col,
+                           2);
+                cv::circle(imgs_[1],
+                           pot_leds_[1][j].center,
+                           5,
+                           col,
+                           2);
 
                 // Store the result
                 blue->push_back(*c);
                 blue_its->push_back({{i, j}});
-            }
+            } */
         }
     }
 }
@@ -294,84 +343,55 @@ float LedTracker3D::calculate_error(cv::Point3f green,
     // Calculate the length of each side of the triangle formed by 3 points
     float sides[3];
     
-    sides[0] = mag(green-blue_l);
-    sides[1] = mag(green-blue_r);
-    sides[2] = mag(blue_l - blue_r);
+    // The triangle found appears to be slightly larger than measured,
+    // So calculate error to be the variation in ratio
+    sides[0] = mag(green-blue_l) / GBL_LEN;
+    sides[1] = mag(green-blue_r) / GBR_LEN;
+    sides[2] = mag(blue_l-blue_r) / BLBR_LEN;
 
-    // Calculate the average error in lengths
-    float err = (sides[0] - GBL_LEN 
-              + sides[1] - GBR_LEN 
-              + sides[2] - BLBR_LEN) / 3.f;
+    float avg = (sides[0] + sides[1] + sides[2]) / 3.f;
 
-    return err;
+    // Find the standard deviation
+    float sd = sqrt((pow(sides[0] - avg, 2) 
+                   + pow(sides[1] - avg, 2) 
+                   + pow(sides[2] - avg, 2))
+                   / 3.f);
+
+    // Calculate the coefficient of variation
+    float cv = sd / avg;
+
+    return cv;
 }
 
 void LedTracker3D::intersect_rays(cv::Vec3f l, 
                                   cv::Vec3f r, 
                                   cv::Point3f *center,
                                   float *distance) {
-    // l_start + mu_l * l ~= r_start + mu_l * r
-    cv::Point3f mu_l, mu_r;
-    float mu_l_fl, mu_r_fl;
+    // trackers_[0].pos + mu_l * l = trackers_[1].pos + mu_l * r + lam * (lxr)
+    // Rearranging to matrix equation gives:
+    // M * (mu_r, lam, mu_l)' = (trackers_[0].pos - trackers_[1].pos)
+    // With the ith row of M = [r_i, (r x l)_i, -l_i]
+    float mu_l, mu_r, lam;
 
-    // Get starting points
-    cv::Point3f l_start, r_start;
-    l_start = trackers_[0].pos;
-    r_start = trackers_[1].pos;
+    cv::Vec3f cr = cross(l, r);
 
     // Normalise vectors
     l /= mag(l);
     r /= mag(r);
+    cr /= mag(cr);
 
-    // Larger than this is considered infinite
-    float max_mu = 100;
-
-    // Calculate mu_r for each axis
-    mu_r.x = (l_start.x * (1 - l[0]) - r_start.x * (1 - r[0])) 
-           / (r[0] * (1  - l[0]));
-    mu_r.y = (l_start.y * (1 - l[1]) - r_start.y * (1 - r[1])) 
-           / (r[1] * (1 - l[1]));
-    mu_r.z = (l_start.z * (1 - l[2]) - r_start.z * (1 - r[2])) 
-           / (r[2] * (1 - l[2]));
-
-    // Check that values are non-infinite before continuing
-    if(isfinite(mu_r.x) && fabs(mu_r.x) < max_mu)
-        mu_r_fl = mu_r.x;
-    else if(isfinite(mu_r.y) && fabs(mu_r.y) < max_mu)
-        mu_r_fl = mu_r.y;
-    else if(isfinite(mu_r.z) && fabs(mu_r.z) < max_mu)
-        mu_r_fl = mu_r.z;
-    else {
-        std::cout << "None of mu_r is finite" << std::endl;
-        // Result is undefined so return
-        return;
-    }
-
-    // As above but for mu_l
-    mu_l.x = (r_start.x + mu_r_fl*r[0] - l_start.x) / l[0];
-    mu_l.y = (r_start.y + mu_r_fl*r[1] - l_start.y) / l[1];
-    mu_l.z = (r_start.z + mu_r_fl*r[2] - l_start.z) / l[2];
-
-    // Ignore infinite, NaN or excessively large values
-    if(isfinite(mu_l.x) && fabs(mu_l.x) < max_mu)
-        mu_l_fl = mu_l.x;
-    else if(isfinite(mu_l.y) && fabs(mu_l.y) < max_mu)
-        mu_l_fl = mu_l.y;
-    else if(isfinite(mu_l.z) && fabs(mu_l.z) < max_mu)
-        mu_l_fl = mu_l.z;
-    else {
-        std::cout << "None of mu_l is finite" << std::endl;
-        // Result is undefined so return
-        return;
-    }
+    // Formulate matrix equation
+    cv::Matx33f M = { r[0], cr[0], -l[0],
+                      r[1], cr[1], -l[1],
+                      r[2], cr[2], -l[2] };
     
-    std::cout << "mu_l: " << mu_l << std::endl;
-    std::cout << "mu_r: " << mu_r << std::endl;
-
-    // Caculate center
-    cv::Point3f l_p, r_p;
-    l_p = l_start + cv::Point3f(mu_l_fl * l);
-    r_p = r_start + cv::Point3f(mu_r_fl * r);
-    *distance = mag(r_p - l_p);
-    *center = (r_p + l_p) / 2;
+    cv::Vec3f scalars = M.inv() * (trackers_[0].pos - trackers_[1].pos);
+    mu_r = scalars[0];
+    lam = scalars[1];
+    mu_l = scalars[2];
+    
+    // Calculate center
+    
+    *center = (cv::Vec3f)trackers_[1].pos + mu_r * r + cr * lam / 2;
+    *distance = lam;
 }

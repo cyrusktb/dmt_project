@@ -4,11 +4,11 @@
 // OpenCV hue ranges from 0 to 179
 
 // HSV blue is 120
-#define BLUE_HUE_MAX 125
-#define BLUE_HUE_MIN 112
+#define BLUE_HUE_MAX 180//125
+#define BLUE_HUE_MIN 0//112
 // HSV green is 60
-#define GREEN_HUE_MAX 72
-#define GREEN_HUE_MIN 53
+#define GREEN_HUE_MAX 180//72
+#define GREEN_HUE_MIN 0//53
 
 
 // Saturation ranges from 0 to 255
@@ -20,7 +20,7 @@
 // Value ranges from 0 to 255
 
 #define VAL_MAX 255
-#define VAL_MIN 245
+#define VAL_MIN 250
 
 
 // When finding the colour of an LED, what is the largest search multiplier?
@@ -32,15 +32,15 @@
 
 // Minimum weighting for hue based weighting, below this is '0'
 
-#define MIN_HUE_WEIGHT 0.05
+#define MIN_HUE_WEIGHT 0.0
 
 // Minimum weighting for position based weighting, below this is '0'
 
-#define MIN_POS_WEIGHT 0.2
+#define MIN_POS_WEIGHT 0.0
 
 // Minimum total weighting, below this is '0'
 
-#define MIN_TOTAL_WEIGHT 0.05
+#define MIN_TOTAL_WEIGHT 0.0
 
 #include <opencv2/opencv.hpp>
 #include <vector>
@@ -121,6 +121,9 @@ private:
 
     // Previous led positions
     cv::Point prev_led_pos_[3];
+
+    // Camera num
+    unsigned int camera_num_;
 };
 
 #endif // __LED_TRACKER_2D_HPP__

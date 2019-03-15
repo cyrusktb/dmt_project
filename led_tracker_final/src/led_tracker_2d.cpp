@@ -3,7 +3,8 @@
 LedTracker2D::LedTracker2D(float fu, float fv, float cu, float cv,
                            float k1, float k2, float p1, float p2,
                            unsigned int camera_num)
-        :cam_(fu, fv, cu, cv, k1, k2, p1, p2, camera_num) {
+        :cam_(fu, fv, cu, cv, k1, k2, p1, p2, camera_num),
+         camera_num_(camera_num) {
     // Raise error if camera failed to open
     if(!cam_.isOpened()) {
         // Throw error in red
@@ -77,7 +78,7 @@ void LedTracker2D::weigh_hue() {
         // Prevent overly large "LEDs" from slowing down the program
         // These are typically bright windows or ceiling lights etc.
         // Filter out tiny "LEDs" caused by background noise
-        if(potential_leds_[i].avg_radius < 20 &&
+        if(potential_leds_[i].avg_radius < 10 &&
            potential_leds_[i].avg_radius > 3) {
             float size_mult;
             for(size_mult = CIRCLE_MULT_MIN;
@@ -214,6 +215,7 @@ bool LedTracker2D::weigh_pos() {
             p--;
         }
     }
+    return true;
 }
 
 void LedTracker2D::combine_weights() {
@@ -274,7 +276,7 @@ void LedTracker2D::find_contours() {
 void LedTracker2D::update_rays() {
     // Loop through the potential LEDs and calculate the ray for this LED
     for(int i = 0; i < potential_leds_.size(); i++) {
-        potential_leds_[i].ray = cam_.get_ray(potential_leds_[i].center);
+        potential_leds_[i].ray = rot * cam_.get_ray(potential_leds_[i].center);
     }
 }
 
@@ -345,4 +347,18 @@ void LedTracker2D::split_and_threshold_channels() {
         // Compare the two images and keep the overlapping regions
         cv::bitwise_and(buffer, hsv_[i], hsv_[i]);
     }
+   /* 
+    char name[10];
+
+    memset(name, '\0', 10);
+    sprintf(name, "H - %d", camera_num_);
+    cv::imshow(name, hsv_[0]);
+
+    memset(name, '\0', 10);
+    sprintf(name, "S - %d", camera_num_);
+    cv::imshow(name, hsv_[2]);
+
+    memset(name, '\0', 10);
+    sprintf(name, "V - %d", camera_num_);
+    cv::imshow(name, hsv_[3]);*/
 }

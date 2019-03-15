@@ -22,6 +22,7 @@ set(SOURCE_FILES
     src/led_tracker_3d.cpp
     src/led_tracker_2d.cpp
     src/camera.cpp
+    src/pose_calculator.cpp
 )
 
 add_executable(

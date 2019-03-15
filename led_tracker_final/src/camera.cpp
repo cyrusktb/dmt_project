@@ -43,9 +43,6 @@ void Camera::get_image(cv::Mat &dest) {
     
     // Undistort the image
     cv::undistort(raw, dest, intrinsic_, distCoeffs_);
-
-    // Flip to mirror user (for debugging)
-    cv::flip(dest, dest, 1);
 }
 
 void Camera::get_image(cv::Mat &dest, cv::Mat &raw) {
@@ -54,9 +51,6 @@ void Camera::get_image(cv::Mat &dest, cv::Mat &raw) {
     
     // Undistort the image
     cv::undistort(raw, dest, intrinsic_, distCoeffs_);
-
-    // Flip to mirror user (for debugging)
-    cv::flip(dest, dest, 1);
 }
 
 cv::Vec3f Camera::get_ray(cv::Point2f p) {

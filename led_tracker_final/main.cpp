@@ -17,21 +17,25 @@ int main(int argc, char **argv) {
     LedTracker2D left_t(LEFT_CAMERA_PARAMS);
     LedTracker2D right_t(RIGHT_CAMERA_PARAMS);
 
+    left_t.pos = LEFT_CAMERA_POS;
+    left_t.rot = LEFT_CAMERA_ROT;
 
+    right_t.pos = RIGHT_CAMERA_POS;
+    right_t.rot = RIGHT_CAMERA_ROT;
+    
     auto func = [](LedTracker2D *tracker, cv::Mat *mat) {
         auto new_pots = tracker->get_points();
         tracker->get_img(*mat);
-
-        std::cout << "\033[31m" << new_pots.size() 
-                  << "\033[0m" << std::endl;
-
+        
         for(char i = 0; i < new_pots.size(); i++) {
             cv::circle(*mat, 
                        new_pots[i].center, 
                        5, 
                        cv::Scalar(128, 128, 255), 
                        3);
+            std::cout << new_pots[i].center << " " << new_pots[i].ray << std::endl;
         }
+        std::cout << std::endl;
         
         // Find the best weights
         float best_weight[3] = {0, 0, 0};
@@ -56,10 +60,14 @@ int main(int argc, char **argv) {
 #endif
     while(true) {
 #ifdef _2DTEST
+        std::cout << "L:" << std::endl;
         std::thread a(func, &left_t, &left);
-        std::thread b(func, &right_t, &right);
 
         a.join();
+
+        std::cout << "R:" << std::endl;        
+        std::thread b(func, &right_t, &right);
+
         b.join();
 #endif
 #ifdef _3DTEST
@@ -68,14 +76,16 @@ int main(int argc, char **argv) {
         cv::Point3f pos, ypr;
         tracker.get_glove_pos(pos, ypr);
 
-        std::cout << "\033[31m"
-                  << "X: " << pos.x * 100
-                  << " Y : " << pos.y * 100
-                  << " Z : " << pos.z * 100
-                  << " YAW: " << ypr.x * 180
+        std::cout << "\033[33m"
+                  << "X: " << pos.x 
+                  << " Y : " << pos.y
+                  << " Z : " << pos.z
+                  << " YAW: " << ypr.x * 180/ 3.1415926
+                  << " PITCH: " << ypr.y * 180/ 3.1415926
+                  << " ROLL: " << ypr.z * 180/ 3.1415926
                   << "\033[0m" << std::endl;
 #endif
-       
+        
         // Display the image
         cv::imshow("LedTracker - left", left);
         cv::imshow("LedTracker - right", right);

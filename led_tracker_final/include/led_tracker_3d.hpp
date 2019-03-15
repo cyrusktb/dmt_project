@@ -9,6 +9,7 @@
 #include <cmath>
 
 #include "led_tracker_2d.hpp"
+#include "pose_calculator.hpp"
 
 // LED positions and magnitudes
 
@@ -16,9 +17,9 @@
 #define BLUE_L_POS cv::Point3f(0.038, 0, 0)
 #define BLUE_R_POS cv::Point3f(0, 0, 0)
 
-#define GBL_LEN mag(GREEN_POS - BLUE_L_POS)
-#define GBR_LEN mag(GREEN_POS - BLUE_R_POS)
-#define BLBR_LEN mag(BLUE_L_POS - BLUE_R_POS)
+#define GBL_LEN mag(GREEN_POS - BLUE_L_POS) * 1.4
+#define GBR_LEN mag(GREEN_POS - BLUE_R_POS) * 1.4
+#define BLBR_LEN mag(BLUE_L_POS - BLUE_R_POS) * 1.4
 
 
 // Maximum distance for an intersection to be considered an intersection
@@ -45,13 +46,20 @@
 
 // Rotation and translation of cameras in the world space
 
-#define LEFT_CAMERA_ROT cv::Matx33f(cos(-0.0872665), -sin(-0.0872665), 0, \
-                                    sin(-0.0872665), cos(-0.0872665) , 0, \
-                                    0              , 0               , 1) 
+#define RIGHT_CAMERA_ROT cv::Matx33f(cos(-0.0872665) , 0, sin(-0.0872665), \
+                                     0               , 1, 0              , \
+                                     -sin(-0.0872665), 0, cos(-0.0872665)) \
+                       * cv::Matx33f(1, 0 , 0 , \
+                                     0, -1, 0 , \
+                                     0, 0 , -1)
 
-#define RIGHT_CAMERA_ROT cv::Matx33f(cos(0.0872665) , -sin(0.0872665) , 0, \
-                                     sin(0.0872665) , cos(0.0872665)  , 0, \
-                                     0              , 0               , 1)
+#define LEFT_CAMERA_ROT cv::Matx33f(cos(0.0872665) , 0, sin(0.0872665), \
+                                    0              , 1, 0             , \
+                                    -sin(0.0872665), 0, cos(0.0872665)) \
+                      * cv::Matx33f(1, 0 , 0 , \
+                                    0, -1, 0 , \
+                                    0, 0 , -1)
+
 
 #define LEFT_CAMERA_POS cv::Vec3f(-0.1, 0.01763, 0)
 
