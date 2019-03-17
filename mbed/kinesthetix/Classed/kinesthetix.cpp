@@ -1,7 +1,7 @@
 #include "mbed.h"
 #include "Servo.h"
 #include "QEI.h"
-#include "Kinesthetix.hpp"
+#include "kinesthetix.h"
 
 Kinesthetix::Kinesthetix(FingerType finger) :myservo(NC), wheel(NC, NC, NC, 24){
     if (finger == MIDDLE){

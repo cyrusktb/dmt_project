@@ -1,7 +1,7 @@
 #include "mbed.h"
 #include "Servo.h"
 #include "QEI.h"
-#include "Kinesthetix.hpp"
+#include "kinesthetix.h"
 
 Serial pc(USBTX, USBRX);
 Kinesthetix kin(MIDDLE);
