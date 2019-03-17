@@ -1,5 +1,6 @@
 #include "web_client.h"
 #include "command_processor.h"
+#include "kinesthetic_controller.h"
 
 // Serial to computer for debugging
 Serial pc(USBTX, USBRX);
@@ -7,9 +8,12 @@ Serial pc(USBTX, USBRX);
 int main() {
     // Set PC baud to 115200
     pc.baud(115200);
-    
+
+    // Create the kinesthetic feedback controller
+    KinestheticController kin_ctrl;
+
     // Create the command processor
-    CommandProcessor cmd_proc_;
+    CommandProcessor cmd_proc(&kin_ctrl);
     
     // Debug print statement
     pc.printf("\nSetting Up ESP8266...............");
@@ -17,8 +21,8 @@ int main() {
     // the ESP is connected to. Also pass the process message command of
     // the command processor in a lambda wrapper, to be called when a 
     // message is received.
-    WebClient client(PA_9, PA_10, PA_0, [&cmd_proc_](std::string msg) {
-        cmd_proc_.process_message(msg); 
+    WebClient client(PA_9, PA_10, PA_0, [&cmd_proc](std::string msg) {
+        cmd_proc.process_message(msg); 
     });
     // Debug print statement
     std::string err = client.get_error();
@@ -38,9 +42,15 @@ int main() {
         // motor vibration strengths.
         client.update();
 
-        // Debugprint statement
+        // Debug print statement
         err = client.get_error();
         if(err != "")
             pc.printf("\033[31mERROR\033[0mm: %s\n", err.c_str());
+
+        // Update the control of the servos
+        kin_ctrl.update();
+
+        // Send the position of the servos back to the server
+        client.send(cmd_proc.create_message());
     }
 }

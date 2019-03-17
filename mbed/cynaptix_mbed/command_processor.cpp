@@ -1,6 +1,7 @@
 #include "command_processor.h"
 
-CommandProcessor::CommandProcessor() {
+CommandProcessor::CommandProcessor(KinestheticController *k_ctrl)
+        :kinesthetic_controller_(k_ctrl) {
     // ctor
 }
 
@@ -27,6 +28,8 @@ void CommandProcessor::process_message(std::string msg) {
             for(char j = 0; j < 4; j++)
                 ((char*)&mtr_pos)[j] = msg[++i];
             
+            // Set the target position of the finger
+            kinesthetic_controller_->set_finger_target(mtr_num, mtr_pos);
             break;
         // Target vibration strength message
         case Msgs::VIB_STR:
@@ -42,4 +45,26 @@ void CommandProcessor::process_message(std::string msg) {
             break;
         }
     }
+}
+
+std::string CommandProcessor::create_message() {
+    std::string msg;
+    msg += Msgs::MSG_STRT;
+    // Get the position of each servo
+    for(char i = 0; i < 3; i++) {
+        float pos = kinesthetic_controller_->get_finger_pos(i);
+        
+        // Message contains a motor position
+        msg += Msgs::MTR_POS;
+
+        // Which motor is it?
+        msg += i;
+
+        // Convert the float into 4 bytes and store each as a character
+        char *char_pos = (char*)&pos;
+        for(char j = 0; j < 4; j++)
+            msg += char_pos++;
+    }
+    msg += Msgs::MSG_END;
+    return msg;
 }

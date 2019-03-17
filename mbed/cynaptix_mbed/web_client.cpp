@@ -56,6 +56,18 @@ std::string WebClient::get_error() {
     return ret;
 }
 
+void WebClient::send(std::string msg) {
+    // Prepare ESP for  sending data
+    esp_->send("AT+CIPSEND=%d", msg.size());
+
+    // Send the message
+    if(esp_->send("%s", msg.c_str()) && esp_->recv("SEND OK")) {
+        // All good
+        return;
+    }
+    set_error("Failed to send message: '" + msg + "'.");
+}
+
 void WebClient::update() {
     int len;
     // Read incoming TCP messages if existant

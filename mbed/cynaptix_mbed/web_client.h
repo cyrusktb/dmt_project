@@ -29,6 +29,9 @@ public:
 
     // Get an error message if any
     std::string get_error();
+
+    // Send a message back to the server
+    void send(std::string msg);
 private:
     // Connect to the network, and return success status
     bool connect_to_network();
