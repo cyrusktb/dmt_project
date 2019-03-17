@@ -4,6 +4,14 @@
 # Vim tags
 */tags
 
+## Mbed stuff
+*.disasm
+*.elf
+*.hex
+*.map
+*.bin
+*.ld
+
 ## C++ stuff
 
 # Build directories
