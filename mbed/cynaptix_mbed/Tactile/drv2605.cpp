@@ -1,6 +1,8 @@
 #include "drv2605.h"
 
-Drv2605::Drv2605(I2C *i2c, bool lra, float period_ms) :p_i2c(i2c) {
+Drv2605::Drv2605(I2C *i2c) :p_i2c(i2c) {}
+
+void Drv2605::init(bool lra, float period_ms) {
     char id = read_register(DRV2605_REG_STATUS);
 
     // Reset to powerup state

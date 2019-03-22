@@ -38,6 +38,9 @@ public:
     // Greater than 127 will be interpreted as 0
     void set_motor_power(char motor_power, VibrationMotor motor);
 private:
+    // I2C channel
+    I2C i2c_;
+
     // 2-channel TCA9543A multiplexer
     Multiplexer multi_2_;
     // 8-channel TCA9548A multiplexer
@@ -46,9 +49,6 @@ private:
     // The 9 vibration motor drivers are identical, and run on the same 
     // settings so we only need one instance to drive them via i2c
     Drv2605 lra_;
-
-    // I2C channel
-    I2C i2c_;
 };
 
 #endif // __TACTILE_CONTOLLER_H__
