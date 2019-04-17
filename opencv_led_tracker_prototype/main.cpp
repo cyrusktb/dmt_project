@@ -26,6 +26,8 @@ int main(int argc, char **argv) {
     cv::moveWindow("LedTracker", 110, 10);
     
     cv::Mat displayFrame;
+    cv::Mat buf;
+    cv::Mat hsv[3];
 
     // OpenCV uses BGR not RGB
     cv::Scalar my_red(30, 30, 150);
@@ -33,6 +35,14 @@ int main(int argc, char **argv) {
     while(1) {
         // Get image from camera
         cam1.get_image(displayFrame);
+
+        cv::cvtColor(displayFrame, buf, CV_BGR2HSV);
+
+        cv::split(buf, hsv);
+
+        cv::imshow("H", hsv[0]);
+        cv::imshow("S", hsv[1]);
+        cv::imshow("V", hsv[2]);
 
         // cv::flip(displayFrame, displayFrame, 1);
         
