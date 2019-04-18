@@ -1,0 +1,56 @@
+<launch>
+    <group ns="left_camera">    
+        <!-- camera driver -->
+        <node pkg="usb_cam" type="usb_cam_node" name="camera" output="log"
+              respawn="true">
+            <!-- Left camera should be plugged in first to be video0 -->
+            <param name="video_device" value="/dev/video0"/>
+            <!-- tf frame name -->
+            <param name="camera_frame_id" value="left_camera"/>
+            <param name="framerate" value="30"/>
+            <!-- Camera callibration file location -->
+            <param name="camera_info_url" 
+                   value="file://$(find cynaptix)/camera/camera_callibration.ini"/>
+            <param name="camera_name" value="camera"/>
+        </node>
+        <!-- object finder -->
+        <node pkg="find_object_2d" type="find_object_2d" output="screen"
+              name="object_finder" args="image:=camera/image_raw"
+              respawn="true">
+            <!-- We don't have depth data for the cameras -->
+            <param name="subscribe_depth" value="false"/>
+            <!-- GUI an be useful for debugging -->
+            <param name="gui" value="true"/>
+            <!-- This contains all the objects we're searching for -->
+            <param name="objects_path" value="$(find cynaptix)/objects/"/>
+        </node>
+    </group>
+              
+    <group ns="right_camera">
+        <!-- camera driver -->
+        <node pkg="usb_cam" type="usb_cam_node" name="camera" output="log"
+              respawn="true">
+            <!-- Right camera should be plugged in second to be video1 -->
+            <param name="video_device" value="/dev/video1"/>
+            <!-- tf frame name -->
+            <param name="camera_frame_id" value="right_camera"/>
+            <param name="framerate" value="30"/>
+            <!-- Camera callibration file location -->
+            <param name="camera_info_url" 
+                      value="file://$(find cynaptix)/camera/camera_callibration.ini"/>
+            <param name="camera_name" value="camera"/>
+        </node>
+
+        <!-- object finder -->
+        <node pkg="find_object_2d" type="find_object_2d" output="screen"
+              name="object_finder" args="image:=camera/image_raw"
+              respawn="true">
+            <!-- We don't have depth data for the cameras -->
+            <param name="subscribe_depth" value="false"/>
+            <!-- GUI an be useful for debugging -->
+            <param name="gui" value="true"/>
+            <!-- This contains all the objects we're searching for -->
+            <param name="objects_path" value="$(find cynaptix)/objects/"/>
+        </node>
+    </group>
+</launch>

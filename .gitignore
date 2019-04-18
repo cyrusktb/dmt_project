@@ -32,3 +32,8 @@
 *.la
 *.a
 *.lib
+
+# Catkin stuff
+catkin_ws/src/CMakeLists.txt
+catkin_ws/devel/*
+catkin_ws/build/*
