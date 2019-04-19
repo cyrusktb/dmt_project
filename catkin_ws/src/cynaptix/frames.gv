@@ -1,0 +1,8 @@
+digraph G {
+"world" -> "right_camera_frame"[label=" Broadcaster: /right_camera_link_broadcaster\nAverage rate: 10000.0\nBuffer length: 0.0\nMost recent transform: 0.0\nOldest transform: 0.0\n"];
+"world" -> "left_camera_frame"[label=" Broadcaster: /left_camera_link_broadcaster\nAverage rate: 10000.0\nBuffer length: 0.0\nMost recent transform: 0.0\nOldest transform: 0.0\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1555707792.37"[ shape=plaintext ] ;
+}->"world";
+}

@@ -1,4 +1,13 @@
 <launch>
+    <!-- tf transforms of the cameras -->
+    <!-- args: x y z (meters) yaw pitch roll (rad) frame child_frame -->
+    <node pkg="tf2_ros" type="static_transform_publisher" 
+          name="left_camera_link_broadcaster" 
+          args="-0.1 0 0.3 -0.174532925 0 0 world left_camera_frame"/>
+    <node pkg="tf2_ros" type="static_transform_publisher" 
+          name="right_camera_link_broadcaster" 
+          args="0.1 0 0.3 0.174532925 0 0 world right_camera_frame"/>
+
     <group ns="left_camera">    
         <!-- camera driver -->
         <node pkg="usb_cam" type="usb_cam_node" name="camera" output="log"
@@ -6,13 +15,14 @@
             <!-- Left camera should be plugged in first to be video0 -->
             <param name="video_device" value="/dev/video0"/>
             <!-- tf frame name -->
-            <param name="camera_frame_id" value="left_camera"/>
+            <param name="camera_frame_id" value="left_camera_frame"/>
             <param name="framerate" value="30"/>
             <!-- Camera callibration file location -->
             <param name="camera_info_url" 
                    value="file://$(find cynaptix)/camera/camera_callibration.ini"/>
             <param name="camera_name" value="camera"/>
         </node>
+
         <!-- object finder -->
         <node pkg="find_object_2d" type="find_object_2d" output="screen"
               name="object_finder" args="image:=camera/image_raw"
@@ -33,7 +43,7 @@
             <!-- Right camera should be plugged in second to be video1 -->
             <param name="video_device" value="/dev/video1"/>
             <!-- tf frame name -->
-            <param name="camera_frame_id" value="right_camera"/>
+            <param name="camera_frame_id" value="right_camera_frame"/>
             <param name="framerate" value="30"/>
             <!-- Camera callibration file location -->
             <param name="camera_info_url" 
@@ -53,4 +63,7 @@
             <param name="objects_path" value="$(find cynaptix)/objects/"/>
         </node>
     </group>
+
+    <node pkg="cynaptix" type="glove_tracking_node" name="glove_tracker">
+    </node>
 </launch>
