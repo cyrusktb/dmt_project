@@ -19,6 +19,8 @@ else
     v4l2-ctl --set-ctrl=exposure_auto=1 -d "$1"
     # Set exposure time
     v4l2-ctl --set-ctrl=exposure_absolute="$2" -d "$1"
+    # Turn off white automatic temperature balance
+    v4l2-ctl --set-ctrl=white_balance_temperature_auto=0-d "$1"
     # Nice message
     echo "Set /dev/video$1 to an absolute exposure of $2"
     exit 0
