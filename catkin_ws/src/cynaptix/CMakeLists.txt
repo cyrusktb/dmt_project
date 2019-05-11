@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   tf
   image_transport
+  cv_bridge  
 )
 
 # System dependencies are found with CMake's conventions
@@ -23,6 +24,7 @@ find_package(Qt5 COMPONENTS Core Widgets PrintSupport)
 catkin_package()
 
 include_directories(
+  include
   include
   ${OpenCV_INCLUDE_DIRS}
   ${Qt5Core_INCLUDE_DIRS}
@@ -42,7 +44,15 @@ add_executable(glove_tracking_node
   ${QT_MOC_HPP}
 )
 
+add_executable(led_detector_node
+  led_detector_node.cpp
+  src/led_detector/led_detector.cpp
+)
+
+
 add_dependencies(glove_tracking_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_dependencies(led_detector_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(
   glove_tracking_node
@@ -53,7 +63,15 @@ target_link_libraries(
   ${catkin_LIBRARIES}
 )
 
-install(TARGETS glove_tracking_node
+target_link_libraries(
+  led_detector_node
+  ${OpenCV_LIBS}
+  ${catkin_LIBRARIES}
+)
+
+install(TARGETS 
+  glove_tracking_node 
+  led_detector_node
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
@@ -68,4 +86,7 @@ install(DIRECTORY objects
 install(DIRECTORY camera
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
-  
+
+install(PROGRAMS scripts/camera_exposure_setup.bash
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)

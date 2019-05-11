@@ -9,6 +9,12 @@
           args="0.1 0 0.3 0.174532925 0 0 world right_camera_frame"/>
 
     <group ns="left_camera">    
+        <!-- set camera exposure time -->
+        <!-- args are <camera number> <exposure time> -->
+        <node pkg="cynaptix" type="camera_exposure_setup.bash" 
+              name="exposure" output="log" respawn="false"
+              args="0 20"/>
+
         <!-- camera driver -->
         <node pkg="usb_cam" type="usb_cam_node" name="camera" output="log"
               respawn="true">
@@ -36,7 +42,13 @@
         </node>
     </group>
               
-    <group ns="right_camera">
+    <group ns="right_camera"> 
+        <!-- set camera exposure time -->
+        <!-- args are <camera number> <exposure time> -->
+        <node pkg="cynaptix" type="camera_exposure_setup.bash" 
+              name="exposure" output="log" respawn="false"
+              args="1 20"/>
+
         <!-- camera driver -->
         <node pkg="usb_cam" type="usb_cam_node" name="camera" output="log"
               respawn="true">
