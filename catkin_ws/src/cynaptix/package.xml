@@ -12,10 +12,13 @@
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>visualization_msgs</depend>
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
   <depend>image_transport</depend>
   <depend>cv_bridge</depend>
+  
+  <build_depend>message_generation</build_depend>
 
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>usb_cam</exec_depend>

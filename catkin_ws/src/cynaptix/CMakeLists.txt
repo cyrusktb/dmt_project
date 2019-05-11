@@ -4,6 +4,11 @@ project(cynaptix)
 # Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
 
+# System dependencies are found with CMake's conventions
+find_package(OpenCV REQUIRED)
+
+find_package(Qt5 COMPONENTS Core Widgets PrintSupport)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
@@ -13,12 +18,22 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   image_transport
   cv_bridge  
+  message_generation
+  visualization_msgs
 )
 
-# System dependencies are found with CMake's conventions
-find_package(OpenCV REQUIRED)
+# Generate messages in the 'msg' folder
+add_message_files(
+  FILES
+  LedRayArray.msg
+)
 
-find_package(Qt5 COMPONENTS Core Widgets PrintSupport)
+# Generate the added messages
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+)
 
 # Catkin setup
 catkin_package()
@@ -47,6 +62,7 @@ add_executable(glove_tracking_node
 add_executable(led_detector_node
   led_detector_node.cpp
   src/led_detector/led_detector.cpp
+  src/led_detector/point_picker.cpp
 )
 
 

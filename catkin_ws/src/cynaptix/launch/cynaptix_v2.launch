@@ -1,0 +1,102 @@
+<launch>
+    <!-- tf transforms of the cameras -->
+    <!-- args: x y z (meters) yaw pitch roll (rad) frame child_frame -->
+    <node pkg="tf2_ros" type="static_transform_publisher" 
+          name="left_camera_link_broadcaster" 
+          args="-0.1 0 0.3 -0.1745329 0 -1.570796 world left_camera_frame"/>
+    <node pkg="tf2_ros" type="static_transform_publisher" 
+          name="right_camera_link_broadcaster" 
+          args="0.1 0 0.3 0.1745329 0 -1.570796 world right_camera_frame"/>
+
+    <group ns="left_camera">    
+        <!-- set camera exposure time -->
+        <!-- args are <camera number> <exposure time> -->
+        <node pkg="cynaptix" type="camera_exposure_setup.bash" 
+              name="exposure" output="log" respawn="false"
+              args="0 100"/>
+
+        <!-- camera driver -->
+        <node pkg="usb_cam" type="usb_cam_node" name="camera" output="log"
+              respawn="true">
+            <!-- Left camera should be plugged in first to be video0 -->
+            <param name="video_device" value="/dev/video0"/>
+            <!-- tf frame name -->
+            <param name="camera_frame_id" value="left_camera_frame"/>
+            <param name="framerate" value="30"/>
+            <!-- Camera callibration file location -->
+            <param name="camera_info_url" 
+                   value="file://$(find cynaptix)/camera/camera_callibration.ini"/>
+            <param name="camera_name" value="camera"/>
+        </node>
+
+        <!-- led detector -->
+        <node pkg="cynaptix" type="led_detector_node" name="detector"
+              output="screen" respawn="true">
+            <param name="debug" value="True"/>
+            <param name="led_memory" value="10"/>
+            <param name="image_topic" value="/left_camera/camera/image_raw"/>
+            <param name="frame_id" value="left_camera_frame"/>
+            
+            <param name="green_hue_min" value="53"/>
+            <param name="green_hue_max" value="72"/>
+
+            <param name="blue_hue_min" value="112"/>
+            <param name="blue_hue_max" value="125"/>
+
+            <param name="sat_min" value="20"/>
+            <param name="sat_max" value="80"/>
+
+            <param name="val_min" value="205"/>
+            <param name="val_max" value="255"/>
+
+            <param name="radius_min" value="1"/>
+            <param name="radius_max" value="10"/>
+        </node>
+    </group>
+              
+    <group ns="right_camera"> 
+        <!-- set camera exposure time -->
+        <!-- args are <camera number> <exposure time> -->
+        <node pkg="cynaptix" type="camera_exposure_setup.bash" 
+              name="exposure" output="log" respawn="false"
+              args="1 100"/>
+
+        <!-- camera driver -->
+        <node pkg="usb_cam" type="usb_cam_node" name="camera" output="log"
+              respawn="true">
+            <!-- Right camera should be plugged in second to be video1 -->
+            <param name="video_device" value="/dev/video1"/>
+            <!-- tf frame name -->
+            <param name="camera_frame_id" value="right_camera_frame"/>
+            <param name="framerate" value="30"/>
+            <!-- Camera callibration file location -->
+            <param name="camera_info_url" 
+                      value="file://$(find cynaptix)/camera/camera_callibration.ini"/>
+            <param name="camera_name" value="camera"/>
+        </node>
+
+        <!-- led detector -->
+        <node pkg="cynaptix" type="led_detector_node" name="detector"
+              output="screen" respawn="true">
+            <param name="debug" value="True"/>
+            <param name="led_memory" value="10"/>
+            <param name="image_topic" value="/right_camera/camera/image_raw"/>
+            <param name="frame_id" value="right_camera_frame"/>
+            
+            <param name="green_hue_min" value="53"/>
+            <param name="green_hue_max" value="72"/>
+
+            <param name="blue_hue_min" value="112"/>
+            <param name="blue_hue_max" value="125"/>
+
+            <param name="sat_min" value="20"/>
+            <param name="sat_max" value="80"/>
+
+            <param name="val_min" value="205"/>
+            <param name="val_max" value="255"/>
+
+            <param name="radius_min" value="1"/>
+            <param name="radius_max" value="10"/>
+        </node>
+    </group>
+</launch>

@@ -23,7 +23,11 @@ public:
                     const cv::Mat& img
                 )>& callback);
 private:
+    // To get public topics and parameters
+    ros::NodeHandle pub_nh_;
+    // To get private topics and parameters
     ros::NodeHandle nh_;
+
     cv::Matx33f camera_intrinsic;
 
     // Callback for when leds have been found on an image

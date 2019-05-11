@@ -5,7 +5,7 @@ LedDetector::LedDetector(const std::function<void (
                     const std::vector<LedPoint>& blue_leds,
                     const cv::Mat &img
                 )>& callback) 
-        :it_(nh_), leds_found_callback(callback) {
+        :nh_("~"), it_(pub_nh_), leds_found_callback(callback) {
     // Get the camera topic name
     std::string topic;
     if(!nh_.getParam("image_topic", topic)) 
