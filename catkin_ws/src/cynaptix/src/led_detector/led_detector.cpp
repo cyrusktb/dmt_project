@@ -42,10 +42,36 @@ LedDetector::LedDetector(const std::function<void (
     if(!nh_.param<int>("radius_max", max_radius_, 10)) 
         ROS_WARN("Failed to get param 'radius_max', defaulting to 10");
 
-
     // Subscribe to input video to receive the image
     sub_=it_.subscribeCamera(topic, 1,
                              &LedDetector::image_callback, this);
+
+    // Debug mode
+    if(nh_.param<bool>("debug", debug_, false) && debug_) {
+        ROS_INFO("DEBUG MODE ON!");
+
+        cv::namedWindow("Debug Threshold Test", cv::WINDOW_AUTOSIZE);
+
+        cv::createTrackbar("Blue min", "Debug Threshold Test", 
+                           &(blue_hue_[0]), 255);
+        cv::createTrackbar("Blue max", "Debug Threshold Test", 
+                           &(blue_hue_[1]), 255);
+
+        cv::createTrackbar("Green min", "Debug Threshold Test", 
+                           &(green_hue_[0]), 255);
+        cv::createTrackbar("Green max", "Debug Threshold Test", 
+                           &(green_hue_[1]), 255);
+
+        cv::createTrackbar("Sat min", "Debug Threshold Test", 
+                           &(sat_[0]), 255);
+        cv::createTrackbar("Sat max", "Debug Threshold Test", 
+                           &(sat_[1]), 255);
+
+        cv::createTrackbar("Val min", "Debug Threshold Test", 
+                           &(val_[0]), 255);
+        cv::createTrackbar("Val max", "Debug Threshold Test", 
+                           &(val_[1]), 255);
+    }
 }
 
 void LedDetector::image_callback(const sensor_msgs::ImageConstPtr& msg,
@@ -210,6 +236,15 @@ void LedDetector::split_and_threshold_channels(cv::Mat& img,
 
         // Compare the two images and keep the overlapping regions
         cv::bitwise_and(buffer, hhsv[i], hhsv[i]);
+    }
+    
+    //Debug mode allows live adjusting of threshold values
+    if(debug_) {
+        cv::bitwise_or(hhsv[0], hhsv[1], buffer);
+        cv::bitwise_and(hhsv[2], buffer, buffer);
+        cv::bitwise_and(hhsv[3], buffer, buffer);
+        cv::imshow("Temp", buffer);
+        cv::waitKey(1);
     }
 }
 

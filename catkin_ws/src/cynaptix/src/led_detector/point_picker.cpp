@@ -70,7 +70,9 @@ void PointPicker::led_callback(const std::vector<LedPoint>& green_leds,
 
     marker.scale.x = 0.01;
 
+    marker.color.r = 0.0f;
     marker.color.g = 1.0f;
+    marker.color.b = 0.0f;
     marker.color.a = 1.0f;
 
     for(int i = 0; i < msg.greens.size(); i++) {
@@ -89,6 +91,8 @@ void PointPicker::led_callback(const std::vector<LedPoint>& green_leds,
     
     marker.color.g = 0.0;
     marker.color.b = 1.0f;
+
+    marker.points.clear();
 
     for(int i = 0; i < msg.blues.size(); i++) {
         geometry_msgs::Point p;

@@ -23,6 +23,9 @@ public:
                     const cv::Mat& img
                 )>& callback);
 private:
+    //Debug mode
+    bool debug_;
+
     // To get public topics and parameters
     ros::NodeHandle pub_nh_;
     // To get private topics and parameters
