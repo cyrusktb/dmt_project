@@ -15,7 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   sensor_msgs
   tf2_ros
-  tf
+  tf2_geometry_msgs
   image_transport
   cv_bridge  
   message_generation
@@ -65,10 +65,18 @@ add_executable(led_detector_node
   src/led_detector/point_picker.cpp
 )
 
+add_executable(glove_position_node
+  glove_position_node.cpp
+  src/glove_position/ray_intersector.cpp
+  src/glove_position/pose_finder.cpp
+  src/glove_position/maths.cpp
+)
 
 add_dependencies(glove_tracking_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_dependencies(led_detector_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_dependencies(glove_position_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(
   glove_tracking_node
@@ -85,9 +93,16 @@ target_link_libraries(
   ${catkin_LIBRARIES}
 )
 
+target_link_libraries(
+  glove_position_node
+  ${OpenCV_LIBS}
+  ${catkin_LIBRARIES}
+)
+
 install(TARGETS 
   glove_tracking_node 
   led_detector_node
+  glove_position_node
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

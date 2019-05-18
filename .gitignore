@@ -37,3 +37,6 @@
 catkin_ws/src/CMakeLists.txt
 catkin_ws/devel/*
 catkin_ws/build/*
+
+# Ros stuff
+*.bag

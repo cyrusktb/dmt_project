@@ -105,11 +105,7 @@ void PointPicker::led_callback(const std::vector<LedPoint>& green_leds,
 
     rviz_marker_pub_.publish(marker);
 
-
-
     for(int i = 0; i < green_leds.size(); i++) {
-        std::cout << green_leds[i].center << " || "
-                  << green_leds[i].avg_radius << std::endl;
         cv::circle(img, 
                    green_leds[i].center, 
                    2*green_leds[i].avg_radius,
