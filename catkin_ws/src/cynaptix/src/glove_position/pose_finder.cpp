@@ -72,8 +72,6 @@ void PoseFinder::find_pose(std::vector<cv::Point3f> green_points,
         }
     }
 
-    std::cout << error << std::endl;
-
     // Find the pose of the glove from the points
     find_glove_pose(best_green, best_blue_1, best_blue_2);
 }
@@ -110,27 +108,17 @@ void PoseFinder::find_glove_pose(cv::Point3f green,
     glove.B = blue_1;
     glove.C = blue_2;
 
-    cv::Matx33f R;
-
     // Find the rotation from the untransformed glove 
     // at 0,0,0 to the real glove
-    get_rotation_matrix(R, led_pos_, glove);
+    Quaterniond q = get_quaternion(led_pos_, glove);
 
     // Now that we have the rotation, calculate the translation
     // Average the translation for each point
-    cv::Vec3f trans = (green - R * led_pos_.A +
-                       blue_1 - R * led_pos_.B +
-                       blue_2 - R * led_pos_.C) / 3;
+    cv::Vec3f trans = (green - q * led_pos_.A +
+                       blue_1 - q * led_pos_.B +
+                       blue_2 - q * led_pos_.C) / 3;
     
     // Calculate the pose
-    tf2::Matrix3x3 M;
-    M.setValue(R(0,0), R(0,1), R(0,2),
-               R(1,0), R(1,1), R(1,2),
-               R(2,0), R(2,1), R(2,2));
-
-    tf2::Quaternion q;
-    M.getRotation(q);
-
     geometry_msgs::TransformStamped msg;
     msg.header.stamp = ros::Time::now();
     msg.header.frame_id = "world";
@@ -140,12 +128,10 @@ void PoseFinder::find_glove_pose(cv::Point3f green,
     msg.transform.translation.y = trans[1];
     msg.transform.translation.z = trans[2];
 
-    msg.transform.rotation.x = q.x();
-    msg.transform.rotation.y = q.y();
-    msg.transform.rotation.z = q.z();
-    msg.transform.rotation.w = q.w();
+    msg.transform.rotation.x = q.x;
+    msg.transform.rotation.y = q.y;
+    msg.transform.rotation.z = q.z;
+    msg.transform.rotation.w = q.w;
 
     tf_broadcaster_.sendTransform(msg);
-
-    std::cout << msg << std::endl;
 }

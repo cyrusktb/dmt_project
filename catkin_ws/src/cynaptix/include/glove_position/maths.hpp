@@ -21,12 +21,21 @@ float dot(cv::Vec3f a, cv::Vec3f b);
 // Vector cross product
 cv::Vec3f cross(cv::Vec3f a, cv::Vec3f b);
 
-// Calculate the angle between two vectors about a given axis
-float calc_angle(cv::Vec3f axis, cv::Vec3f A, cv::Vec3f B);
+// Struct representing a quaternion
+struct Quaterniond {
+    double x, y, z, w;
+};
 
-// Get the rotation matrix required to rotate from new_pos to old_pos
-void get_rotation_matrix(cv::Matx33f &rot, 
-                         Triangle old_pos, 
-                         Triangle new_pos);
+Quaterniond operator * (const Quaterniond& q1, const Quaterniond& q2);
+cv::Vec3f operator * (const Quaterniond& q, const cv::Vec3f& v);
+cv::Point3f operator * (const Quaterniond& q, const cv::Point3f& p);
+
+// Get the quaternion to rotate v2 onto v1 about axis
+Quaterniond get_quaternion_about_axis(cv::Vec3f axis,
+                                      cv::Vec3f v1,
+                                      cv::Vec3f v2);
+
+// Get the quaternion needed to rotate from old_pos to new_pos
+Quaterniond get_quaternion(Triangle old_pos, Triangle new_pos);
 
 #endif // __MATHS_HPP__

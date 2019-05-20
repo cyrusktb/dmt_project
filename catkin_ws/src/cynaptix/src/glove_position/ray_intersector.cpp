@@ -97,8 +97,10 @@ void RayIntersector::intersect_rays() {
     }
 
     // Return if none found
-    if(!g_p.size())
+    if(!g_p.size()) {
+        ROS_INFO("No valid green intersections found!");
         return;
+    }
 
     // Repeat for blue
 
@@ -115,12 +117,16 @@ void RayIntersector::intersect_rays() {
     }
 
     // Return if none found
-    if(!b_p.size())
+    if(!b_p.size()) {
+        ROS_INFO("No valid blue intersections found");
         return;
+    }
 
     if(debug_) {
         debug_publish_points(g_p, b_p);
     }
+
+    ROS_INFO("g_size: %d -- b_size: %d", g_p.size(), b_p.size());
 
     // Find publish the pose of the glove
     finder_.find_pose(g_p, b_p);
@@ -175,7 +181,10 @@ void RayIntersector::intersect_single_rays(geometry_msgs::Vector3 left,
     mu_l = scalars[2];
 
     // If lambda is less than the allowed tolerance then accept intersection
-    if(fabs(lam) > intersection_tol_) return;
+    if(fabs(lam) > intersection_tol_) {
+        ROS_INFO("Bad tolerance");
+        return;
+    }
 
     // Calculate center
     cv::Point3f center = (cv::Vec3f)right_pos + mu_r * r + cr * lam / 2;
@@ -183,8 +192,11 @@ void RayIntersector::intersect_single_rays(geometry_msgs::Vector3 left,
     // If the center is not within the allowed bounds then ignore
     if(min_x_ > center.x || max_x_ < center.x ||
        min_y_ > center.y || max_y_ < center.y ||
-       min_z_ > center.z || max_z_ < center.z)
+       min_z_ > center.z || max_z_ < center.z) {
+        ROS_INFO("Out of bounds: [%0.2f, %0.2f, %0.2f]", 
+                 center.x, center.y, center.z);
         return;
+    }
     
     // Push back the accepted point
     point_arr->push_back(center);

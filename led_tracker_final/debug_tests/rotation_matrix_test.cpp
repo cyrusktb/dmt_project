@@ -24,90 +24,90 @@ cv::Vec3f cross(cv::Vec3f a, cv::Vec3f b) {
     return res;
 }
 
-float calc_angle(cv::Vec3f axis, cv::Vec3f A, cv::Vec3f B) {
-    // Find the rotation about axis to get B to A
+struct Quaterniond {
+    double x, y, z, w;
+};
 
-    // Using Rodriquez' formula
-    // A = B*cos(theta) + (axis x B)*sin(theta)
-    //   + axis*dot(axis, B)*(1-cos(theta));
-    // Rearrange for tan(theta) and we have a vector equation for which
-    // we want a scalar solution. Each equation has two solutions, so
-    // Find which solution is duplicated
-    bool solution_found = false;
-    double a, b, c;
-    double res[9];
-
-    // normalise
-    axis /= mag(axis);
-    A /= mag(A);
-    B /= mag(B);
-    
-    for(short i = 0; i < 3; i++) {
-        a = A[i] - 2 * axis[i] * dot(axis, B) + B[i];
-        b = -2 * cross(axis, B)[i];
-        c = A[i] - B[i];
-
-        if(b*b - 4*a*c >= 0) {
-            solution_found = true;
-
-            res[3*i] = -b + sqrt(b*b - 4*a*c);
-            res[3*i+1] = -b - sqrt(b*b - 4*a*c);
-            res[3*i+2] = 2*a;
-
-            std::cout << i << ": " << res[3*i] / (2*a) << " | " 
-                      << res[3*i+1] / (2*a) << "\n";
-        }
-        else {
-            res[3*i+2] = 0;
-            std::cout << i << ": Failed" << std::endl;
-        }
-    }
-
-    if(!solution_found) {
-        std::cout << "No rotational solution could be found";
-        return 0;
-    }
-
-    // Calculate angle
-    float theta;
-    bool theta_found = false;
-    // Check for a result which matches with another
-    for(char i = 0; i < 3 && !theta_found; i++) {
-        if(i == 3) {
-            std::cout << "Theta not found" << std::endl;
-            return 0;
-        }
-        if(res[3*i+2] != 0) {
-            for(char j = i+1; j < 3 && !theta_found; j++) {
-                if(res[3*j+2] != 0) {
-                    if(fabs(
-                        res[3*i] / res[3*i+2] 
-                      - res[3*j] / res[3*j+2]
-                       ) < 1e-1) {
-                        theta = 2*atan2(res[3*i], res[3*i+2]);
-                        theta_found = true;
-                    }
-                    else if(fabs(
-                        res[3*i+1] / res[3*i+2] 
-                      - res[3*j+1] / res[3*j+2]
-                       ) < 1e-1) {
-                        theta = 2*atan2(res[3*i+1], res[3*i+2]);
-                        theta_found = true;
-                    }
-                }
-            }
-        }
-    }
-
-    std::cout << "Theta: " << theta*180/3.1415926 << "\n";
-    return theta;
+std::ostream& operator<<(std::ostream& os, const Quaterniond& q) {
+    os << "x: " << q.x 
+       << "\ny: " << q.y 
+       << "\nz: " << q.z 
+       << "\nw: " << q.w;
 }
 
-// Find the rotation to get from the new triangl to the old triangle
-void get_rotation_matrix(cv::Matx33f &rot, 
-                         Triangle old_pos, 
-                         Triangle new_pos) {
-    // Step 1 Align point A at the origin for both triangles
+Quaterniond operator * (const Quaterniond& q1, const Quaterniond& q2) {
+    Quaterniond qres;
+    qres.x = q1.x*q2.w + q1.y*q2.z - q1.z*q2.y + q1.w*q2.x;
+    qres.y = -q1.x*q2.z + q1.y*q2.w + q1.z*q2.x + q1.w*q2.y;
+    qres.z = q1.x*q2.y - q1.y*q2.x + q1.z*q2.w + q1.w*q2.z;
+    qres.w = -q1.x*q2.x - q1.y*q2.y - q1.z*q2.z + q1.w*q2.w;
+    return qres;
+}
+
+cv::Vec3f operator * (const Quaterniond& q, const cv::Vec3f& v) {
+    Quaterniond v_quat, q_prime;
+    v_quat.x = v[0];
+    v_quat.y = v[1];
+    v_quat.z = v[2];
+    v_quat.w = 1;
+
+    q_prime.x = -q.x;
+    q_prime.y = -q.y;
+    q_prime.z = -q.z;
+    q_prime.w = q.w;
+
+    v_quat = (q*v_quat)*q_prime;
+    cv::Vec3f ret;
+    ret[0] = v_quat.x;
+    ret[1] = v_quat.y;
+    ret[2] = v_quat.z;
+
+    return ret;
+}
+
+// Find the quaternion to rotate v2 onto the plane defined by axis and v1
+// by rotating about axis. Assumes axis, v1 and v2 originate at O
+Quaterniond get_quaternion_about_axis(cv::Vec3f axis,
+                                      cv::Vec3f v1,
+                                      cv::Vec3f v2) {
+    // Find the centerpoint Kv
+    double theta = acos(dot(axis/mag(axis), v1/mag(v1)));
+    cv::Point3f Kv = mag(v1)*cos(theta) * (cv::Point3f)axis/mag(axis);
+
+    // Find bisectors Kv1, Kv2
+    cv::Vec3f Kv1 = (cv::Point3f)v1 - Kv;
+    cv::Vec3f Kv2 = (cv::Point3f)v2 - Kv;
+
+    // Step 4 find the angle between the KCs to find the rotation matrix
+    // Occasionally this can get close to -1, combined with floating
+    // point errors go below -1 so bound
+    double d =  dot(Kv1/mag(Kv1), Kv2/mag(Kv2));
+
+    if(mag(Kv1) == 0 || mag(Kv2) == 0) d = 0;
+    // Account for floating point error edge cases
+    if(d > 1) d = 1;
+    else if(d < -1) d = -1;
+    std::cout << "d: " << d << "\n\n";
+    theta = acos(d);
+    double s = sin(theta/2);
+
+    // Normalise the axis
+    axis /= mag(axis);
+
+    // Calculate unit quaternion
+    Quaterniond q;
+    q.x = axis[0]*s;
+    q.y = axis[1]*s;
+    q.z = axis[2]*s;
+    q.w = cos(theta/2);
+
+    std::cout << "theta: " << theta << "\n\n";
+
+    return q;
+}
+
+Quaterniond get_quaternion(Triangle old_pos, Triangle new_pos) {
+    // Align points at the origin for both triangles
     old_pos.B -= old_pos.A;
     old_pos.C -= old_pos.A;
     old_pos.A -= old_pos.A;
@@ -116,103 +116,46 @@ void get_rotation_matrix(cv::Matx33f &rot,
     new_pos.C -= new_pos.A;
     new_pos.A -= new_pos.A;
 
-    // Step 2, find a rotation to get AB aligned, by rotating around 
-    // the cross product of the two vectors
-    cv::Vec3f AB_old = old_pos.A - old_pos.B;
-    cv::Vec3f AB_new = new_pos.A - new_pos.B;
+    // Find the quaternion to rotate new_AB onto old_AB
+    Quaterniond q1 = get_quaternion_about_axis(old_pos.B + new_pos.B,
+                                               old_pos.B,
+                                               new_pos.B);
 
-    // Normalise
-    AB_old /= mag(AB_old);
-    AB_new /= mag(AB_new);
+    std::cout << "q1:\n" << q1 << "\n\n";
 
-    // Find the rotation matrix by using Rodriguez' formula
-    // theta = pi, axis = (AB_old + AB_new) / 2
-    
-    cv::Vec3f r = AB_old + AB_new;
-    cv::Matx13f r_t;
-    cv::transpose(r, r_t);
-    
-    cv::Matx33f I{1, 0, 0,
-                  0, 1, 0,
-                  0, 0, 1};
-    
-    cv::Matx33f rot1 = (2 / (r_t * r)[0]) * (r * r_t) - I;
-    
-    // Rotate new triangle
-    AB_new = rot1 * AB_new;
+    new_pos.A = q1*new_pos.A;
+    new_pos.B = q1*new_pos.B;
+    new_pos.C = q1*new_pos.C;
 
-    new_pos.A = rot1 * new_pos.A;
-    new_pos.B = rot1 * new_pos.B;
-    new_pos.C = rot1 * new_pos.C;
-///*
-    // Step 3 find rotation about AB to get AC_new to AC_old
+    Quaterniond q2 = get_quaternion_about_axis(new_pos.B,
+                                              old_pos.C,
+                                              new_pos.C);
 
-    // Find new vectors
-    cv::Vec3f AC_old = old_pos.A - old_pos.C;
-    cv::Vec3f AC_new = new_pos.A - new_pos.C;
-    AB_new = new_pos.A - new_pos.B;
+    std::cout << "q2:\n" << q2 << "\n\n";
 
-    // Normalise
-    AC_old /= mag(AC_old);
-    AC_new /= mag(AC_new);
-    AB_new /= mag(AB_new);
+    new_pos.A = q2*new_pos.A;
+    new_pos.B = q2*new_pos.B;
+    new_pos.C = q2*new_pos.C;
 
-    float theta = calc_angle((AB_old+AB_new)/2.f, AC_old, AC_new);
-    
-    // Calculate the rotation matrix
-    float si = sin(theta);
-    float co = cos(theta);
-    float t = 1 - co;
-    float x = AB_old[0];
-    float y = AB_old[1];
-    float z = AB_old[2];
-    cv::Matx33f rot2 = { t*x*x + co  ,  t*x*y - z*si, t*x*z + y*si,
-                         t*x*y + z*si, t*y*y + co   , t*y*z - x*si,
-                         t*x*z - y*si, t*y*z + x*si , t*z*z + co };
+    std::cout << "q1:\n" << q1 << "\n\nq2:\n" << q2 << "\n\n";
 
-    // Rotate the new triangle
-    new_pos.A = rot2 * new_pos.A;
-    new_pos.B = rot2 * new_pos.B;
-    new_pos.C = rot2 * new_pos.C;
-//*/
-
-    rot = rot2*rot1;
-
-    cv::Vec3f old_AC = old_pos.A - old_pos.C;
-    cv::Vec3f old_AB = old_pos.A - old_pos.B;
-    cv::Vec3f new_AC = new_pos.A - new_pos.C;
-    cv::Vec3f new_AB = new_pos.A - new_pos.B;
-
-    old_AC /= mag(old_AC);
-    old_AB /= mag(old_AB);
-    new_AC /= mag(new_AC);
-    new_AB /= mag(new_AB);
-    
-    std::cout << "Old:\n"
-              << old_pos.A << "\n" << old_pos.B << "\n" << old_pos.C
-              << std::endl << std::endl
-              << "New:\n"
-              << new_pos.A << "\n" << new_pos.B << "\n" << new_pos.C
-              << std::endl << std::endl
-              << "Theta AC: "
-              << acos(dot(old_AC, new_AC)) * 180/3.1415926
-              << std::endl
-              << "Theta AB: "
-              << acos(dot(old_AB, new_AB)) * 180/3.1415926
-              << std::endl << std::endl;
+    return q2*q1;
 }
+
 
 int main() {
     // Create arbitrary first triangle
     Triangle a;
-    a.A.x = 0.007; a.A.y = 0.033; a.A.z = 0;
-    a.B.x = 0.038; a.B.y = 0; a.B.z = 0;
-    a.C.x = 0; a.C.y = 0; a.C.z = 0;
-/*
+    a.A.x = 0; a.A.y = 0; a.A.z = 0;
+    a.B.x = 1; a.B.y = 0; a.B.z = 1;
+    a.C.x = -0.5; a.C.y = 0.5; a.C.z = 0.3;
+
     // Create arbitrary rotation matrix
-    cv::Matx33f rot = { cos(0.3f), sin(0.3f), 0,
-                        -sin(0.3f), cos(0.3f), 0,
+    cv::Matx33f rot = { cos(0.3f), -sin(0.3f), 0,
+                        sin(0.3f), cos(0.3f), 0,
                         0, 0, 1 };
+
+    std::cout << "Rot:\n" << rot << "\n\n";
 
     // Create second triangle rotated by rot
     Triangle b;
@@ -221,18 +164,12 @@ int main() {
     b.C = rot * a.C;
 
     std::cout << "A:\n" << a.A << "\n" << a.B << "\n" << a.C << "\n\n";
-    std::cout << "B:\n" << b.A << "\n" << b.B << "\n" << b.C << std::endl;
-*/
-    Triangle b;
-    b.A.x = 0.05305; b.A.y = -0.09596; b.A.z = 0.6455;
-    b.B.x = 0.01035; b.B.y = -0.05022; b.B.z = 0.6601;
-    b.C.x = 0.06125; b.C.y = -0.0487; b.C.z = 0.6415;
-    // Calculate rotation matrix and compare with known result
-    cv::Matx33f rot_calc;
-    get_rotation_matrix(rot_calc, b, a);
+    std::cout << "B:\n" << b.A << "\n" << b.B << "\n" << b.C << "\n\n";
 
-    std::cout << "Calculated:\n" << rot_calc 
-              //<< "\nCorrect:\n" << rot 
-              //<< "\nError:\n" << rot - rot_calc
-              << std::endl << std::endl;
+    Quaterniond q = get_quaternion(a, b);
+    std::cout << "quat*B:\n" << q*b.A << "\n"
+                             << q*b.B << "\n"
+                             << q*b.C << "\n\n";
+
+    std::cout << "quat:\n" << q << "\n\n";
 }

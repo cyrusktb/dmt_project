@@ -7,8 +7,6 @@ add_compile_options(-std=c++11)
 # System dependencies are found with CMake's conventions
 find_package(OpenCV REQUIRED)
 
-find_package(Qt5 COMPONENTS Core Widgets PrintSupport)
-
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
@@ -42,21 +40,7 @@ include_directories(
   include
   include
   ${OpenCV_INCLUDE_DIRS}
-  ${Qt5Core_INCLUDE_DIRS}
-  ${Qt5Gui_INCLUDE_DIRS}
-  ${Qt5Widgets_INCLUDE_DIRS}
-  ${Qt5PrintSupport_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
-)
-
-add_executable(glove_tracking_node
-  glove_tracking_node.cpp
-  src/object_tracker.cpp
-  src/pose_calculator.cpp
-  src/pose_calculator_3d.cpp
-  ${QT_RESOURCES_CPP} 
-  ${QT_FORMS_HPP} 
-  ${QT_MOC_HPP}
 )
 
 add_executable(led_detector_node
@@ -72,20 +56,9 @@ add_executable(glove_position_node
   src/glove_position/maths.cpp
 )
 
-add_dependencies(glove_tracking_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
 add_dependencies(led_detector_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_dependencies(glove_position_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(
-  glove_tracking_node
-  Qt5::Core
-  Qt5::Widgets
-  Qt5::PrintSupport
-  ${OpenCV_LIBS}
-  ${catkin_LIBRARIES}
-)
 
 target_link_libraries(
   led_detector_node
@@ -100,7 +73,6 @@ target_link_libraries(
 )
 
 install(TARGETS 
-  glove_tracking_node 
   led_detector_node
   glove_position_node
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
