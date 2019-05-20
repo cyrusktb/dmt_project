@@ -6,17 +6,17 @@ import socket
 import sys
 import threading
 
-import glove_connection.message_processor as mp
+import frame_connection.message_processor as mp
 
 def process_connection(conn, rate):
-    # Double the frequency as we call the sleep function twice
+    # Double the frequency as we'll call the sleep function twice
     time_keeper = rospy.Rate(2*rate)
 
     data = ""
 
     while not rospy.is_shutdown():
-        # Send data to the glove
-        msg = mp.get_glove_message()
+        # Send data to the frame
+        msg = mp.get_frame_message()
         try:
             conn.send(msg)
         except socket.timeout:
@@ -24,15 +24,15 @@ def process_connection(conn, rate):
             return
 
         time_keeper.sleep()
-        
-        # Receive data from the glove
+
+        # Receive data from the frame
         try:
             data = conn.recv(64)
         except:
             rospy.loginfo("Connection timed out.")
             return
 
-        mp.process_glove_data(data)
+        mp.process_frame_data(data)
 
         time_keeper.sleep()
 
@@ -41,7 +41,7 @@ def process_connection(conn, rate):
 
 
 if __name__ == "__main__":
-    rospy.init_node("glove_connection_point")
+    rospy.init_node("frame_connection_point")
 
     # Get the port
     port = rospy.get_param("~port", 0)
@@ -65,22 +65,21 @@ if __name__ == "__main__":
     ros_thread = threading.Thread(target=mp.ros_worker)
     ros_thread.start()
 
+
     # Get the local machine hostname
     host = socket.gethostname()
 
-    rospy.loginfo("Starting glove server on '%s:%d'", host, port)
-    
-    # Create a socket and bind it to the host and port   
+    rospy.loginfo("Starting frame server on '%s:%d'", host, port)
+
+    # Create a socket and bind it to the host and port
     s = socket.socket()
     s.bind((host, port))
 
     # Listen for incoming connections
     s.listen(1024)
     while not rospy.is_shutdown():
-        # Accept an incoming connection
         conn, addr = s.accept()
-        
-        rospy.loginfo("Incoming connection from '" + addr + "' accepted!")
+        rospy.loginfo("Incoming connection from '" + addr + "' accepteted!")
 
         # Set the timeout for the connection
         conn.settimeout(timeout)

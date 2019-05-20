@@ -28,6 +28,8 @@ add_message_files(
   LedRayArray.msg
   GloveMeasuredData.msg
   GloveTarget.msg
+  FrameMeasuredData.msg
+  FrameTarget.msg
 )
 
 # Generate the added messages
@@ -103,5 +105,9 @@ install(PROGRAMS scripts/camera_exposure_setup.bash
 )
 
 catkin_install_python(PROGRAMS scripts/glove_connection_point.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+catkin_install_python(PROGRAMS scripts/frame_connection_point.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

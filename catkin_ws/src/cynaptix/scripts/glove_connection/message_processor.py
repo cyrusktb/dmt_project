@@ -54,6 +54,9 @@ def publish_data():
 
 
 def receive_data_callback(data):
+    global servos
+    global vibrations
+
     servos[0] = data.thumb_target
     servos[1] = data.index_target
     servos[2] = data.middle_target
@@ -75,7 +78,7 @@ def ros_worker():
     global pub
     global sub
 
-    pub = rospy.Publisher('glove_received_data', 
+    pub = rospy.Publisher('glove_measured_data', 
                           GloveMeasuredData, 
                           queue_size=1)
     sub = rospy.Subscriber('glove_target', 
@@ -178,8 +181,6 @@ def process_glove_data(data):
                     servo_recs[2] = fnum
                 else:
                     rospy.logerr("Received invalid position motor specifier.")
-            elif c == MESSAGE_END:
-                reading_message = False    
 
             else:
                 rospy.logerr("Received invalid command while reading.")
