@@ -20,10 +20,14 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
 )
 
+catkin_python_setup()
+
 # Generate messages in the 'msg' folder
 add_message_files(
   FILES
   LedRayArray.msg
+  GloveMeasuredData.msg
+  GloveTarget.msg
 )
 
 # Generate the added messages
@@ -95,5 +99,9 @@ install(DIRECTORY rviz
 )
 
 install(PROGRAMS scripts/camera_exposure_setup.bash
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+catkin_install_python(PROGRAMS scripts/glove_connection_point.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
