@@ -1,0 +1,4 @@
+#ifndef __MESSAGE_PROCESSOR_HPP__
+#define __MESSAGE_PROCESSOR_HPP__
+
+#endif // __MESSAGE_PROCESSOR_HPP__
