@@ -26,7 +26,7 @@ Z_AXIS = 0x03
 THETA = 0x04
 GRABBER = 0x05
 
-reading_message = False#
+reading_message = False
 
 pub = None
 sub = None
@@ -86,7 +86,7 @@ def float_to_bytes(val):
 
 def bytes_to_float(val):
     # As above
-    return struct.unpack('<f', val)
+    return struct.unpack('<f', val)[0]
 
 
 def get_frame_message():
@@ -118,7 +118,10 @@ def process_frame_data(data):
     global motor_pos
     global motor_torques
 
-    iterator = data.__iter__()
+    b = bytearray()
+    b.extend(data)
+
+    iterator = b.__iter__()
     for c in iterator:
         if c == MESSAGE_START:
             reading_message = True

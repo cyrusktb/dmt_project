@@ -61,17 +61,21 @@ if __name__ == "__main__":
         rospy.logwarn("Failed to get param 'connection_timeout', using default of 0.5s.")
         timeout = 0.5
 
+    # Get the hostname
+    host = rospy.get_param("~hostname", 0)
+    if host == 0:
+        # Get the local machine hostname
+        host = socket.gethostname()
+        rospy.logwarn("Failed to get param 'hostname', using default of '%s'.", host)
+
     # Create the thread to run the ROS pub/sub
     ros_thread = threading.Thread(target=mp.ros_worker)
     ros_thread.start()
 
-    # Get the local machine hostname
-    host = socket.gethostname()
-
     rospy.loginfo("Starting glove server on '%s:%d'", host, port)
     
     # Create a socket and bind it to the host and port   
-    s = socket.socket()
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((host, port))
 
     # Listen for incoming connections
@@ -80,7 +84,7 @@ if __name__ == "__main__":
         # Accept an incoming connection
         conn, addr = s.accept()
         
-        rospy.loginfo("Incoming connection from '" + addr + "' accepted!")
+        rospy.loginfo("Incoming connection from '" + addr[0] + "' accepted!")
 
         # Set the timeout for the connection
         conn.settimeout(timeout)
@@ -88,7 +92,7 @@ if __name__ == "__main__":
         # Process the connection while it is open
         process_connection(conn, rate)
 
-        rospy.loginfo("Lost connection with '" + addr + "'.")
+        rospy.loginfo("Lost connection with '" + addr[0] + "'.")
 
     ros_thread.join()
     s.close()

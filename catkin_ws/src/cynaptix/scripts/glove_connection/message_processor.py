@@ -96,7 +96,7 @@ def float_to_bytes(val):
 
 def bytes_to_float(val):
     # As above
-    return struct.unpack('<f', val)
+    return struct.unpack('<f', val)[0]
 
 
 def get_glove_message():
@@ -129,7 +129,10 @@ def process_glove_data(data):
     global servo_torques
     global servo_recs
 
-    iterator = data.__iter__()
+    b = bytearray()
+    b.extend(data)
+
+    iterator = b.__iter__()
     for c in iterator:
         if c == MESSAGE_START:
             reading_message = True
