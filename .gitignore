@@ -43,3 +43,6 @@ catkin_ws/build/*
 
 # Python stuff
 *.pyc
+
+# gcc4mbed
+gcc4mbed
