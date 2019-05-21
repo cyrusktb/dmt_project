@@ -1,0 +1,7 @@
+<launch>
+    <!-- Launch the networking nodes -->
+    <include file="$(find cynaptix)/launch/networking.launch"/>
+
+    <!-- Launch the LED tracking nodes -->
+    <include file="$(find cynaptix)/launch/glove_tracking.launch"/>
+</launch>

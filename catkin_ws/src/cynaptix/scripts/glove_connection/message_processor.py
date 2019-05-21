@@ -13,14 +13,12 @@ vibrations = [0, 0, 0,
 
 # Store the most recently received servo positions and torques
 servo_recs = [0.0, 0.0, 0.0]
-servo_torques = [0.0, 0.0, 0.0]
               
 # Message information bytes
 MESSAGE_START = 0xFF
 MESSAGE_END = 0xFE
 
 TARGET_MOTOR_POS = 0x03
-MOTOR_TORQUE = 0x04
 ACTUAL_MOTOR_POS = 0x05
 VIBRATIONS = 0x06
 
@@ -45,10 +43,6 @@ def publish_data():
     data.thumb_pos = servo_recs[0]
     data.index_pos = servo_recs[1]
     data.middle_pos = servo_recs[2]
-
-    data.thumb_torque = servo_torques[0]
-    data.index_torque = servo_torques[1]
-    data.middle_torque = servo_torques[2]
 
     pub.publish(data)
 
@@ -139,28 +133,6 @@ def process_glove_data(data):
         elif reading_message:
             if c == MESSAGE_END:
                 reading_message = False
-            elif c == MOTOR_TORQUE:
-                # Check which motor it is
-                motor = iterator.next()
-                
-                # Read the 4 byte float
-                num = bytearray([iterator.next(),
-                                 iterator.next(),
-                                 iterator.next(),
-                                 iterator.next()])
-
-                # Convert to float
-                fnum = bytes_to_float(num)
-
-                # Store the value in the correct spot
-                if motor == THUMB:
-                    servo_torques[0] = fnum
-                elif motor == INDEX:
-                    servo_torques[1] = fnum
-                elif motor == MIDDLE:
-                    servo_torques[2] = fnum
-                else:
-                    rospy.logerr("Received invalid torque motor specifier.")
 
             elif c == ACTUAL_MOTOR_POS:
                 # Check which motor it is
