@@ -40,3 +40,6 @@ catkin_ws/build/*
 
 # Ros stuff
 *.bag
+
+# Python stuff
+*.pyc
