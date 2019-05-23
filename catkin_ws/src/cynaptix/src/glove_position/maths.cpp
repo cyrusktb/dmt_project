@@ -88,7 +88,40 @@ Quaterniond get_quaternion_about_axis(cv::Vec3f axis,
     return q;
 }
 
-Quaterniond get_quaternion(Triangle old_pos, Triangle new_pos) {
+Quaterniond get_yaw(Triangle& old_pos, Triangle& new_pos) {
+    // Find normals to both triangles
+    cv::Vec3f old_norm = cross(old_pos.A - old_pos.B, 
+                               old_pos.B - old_pos.C);
+
+    cv::Vec3f new_norm = cross(new_pos.A - new_pos.B,
+                               new_pos.B - new_pos.C);
+
+    std::cout << "\n" << old_norm << "\n\n" << new_norm << "\n\n";
+
+    // Project both normals onto the xy plane
+    old_norm[2] = 0;
+    new_norm[2] = 0;
+
+    // Find the angle between the normals
+    float d = dot(old_norm/mag(old_norm), new_norm/mag(new_norm));
+    std::cout << "D: " << d << std::endl;
+    if(d > 1) d = 1;
+    else if(d < -1) d = -1;
+
+    float theta = acos(d);
+    // Check the cross of the normals to find the sign of the angle
+    if(cross(old_norm, new_norm)[2] < 0) theta = -theta;
+
+    Quaterniond ret;
+    ret.x = 0;
+    ret.y = 0;
+    ret.z = sin(theta/2);
+    ret.w = cos(theta/2);
+    return ret;
+}
+
+Quaterniond get_quaternion(Triangle& old_pos, Triangle& new_pos) {
+    return get_yaw(old_pos, new_pos);
     // Align points at the origin for both triangles
     old_pos.B -= old_pos.A;
     old_pos.C -= old_pos.A;
@@ -117,3 +150,4 @@ Quaterniond get_quaternion(Triangle old_pos, Triangle new_pos) {
 
     return q2*q1;
 }
+

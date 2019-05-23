@@ -58,6 +58,40 @@ RayIntersector::~RayIntersector() {
 void RayIntersector::left_callback(const cynaptix::LedRayArray& msg){
     // Store msg
     left_rays_ = msg;
+
+    // Remove duplicate rays
+    for(int i = 0; i < left_rays_.greens.size(); i++) {
+        for(int j = i+1; j < left_rays_.greens.size(); j++) {
+            cv::Vec3f r1, r2;
+            r1[0] = left_rays_.greens[i].x;
+            r1[1] = left_rays_.greens[i].y;
+            r1[2] = left_rays_.greens[i].z;
+            r2[0] = left_rays_.greens[j].x;
+            r2[1] = left_rays_.greens[j].y;
+            r2[2] = left_rays_.greens[j].z;
+
+            if(mag(r1-r2) < 0.02) {
+                left_rays_.greens.erase(left_rays_.greens.begin() +j);
+                j--;
+            }
+        }
+    }
+    for(int i = 0; i < left_rays_.blues.size(); i++) {
+        for(int j = i+1; j < left_rays_.blues.size(); j++) {
+            cv::Vec3f r1, r2;
+            r1[0] = left_rays_.blues[i].x;
+            r1[1] = left_rays_.blues[i].y;
+            r1[2] = left_rays_.blues[i].z;
+            r2[0] = left_rays_.blues[j].x;
+            r2[1] = left_rays_.blues[j].y;
+            r2[2] = left_rays_.blues[j].z;
+
+            if(mag(r1-r2) < 0.02) {
+                left_rays_.blues.erase(left_rays_.blues.begin() +j);
+                j--;
+            }
+        }
+    }
         
     intersect_rays();
 }
@@ -65,6 +99,40 @@ void RayIntersector::left_callback(const cynaptix::LedRayArray& msg){
 void RayIntersector::right_callback(const cynaptix::LedRayArray& msg){
     // Store msg
     right_rays_ = msg;
+
+    // Remove duplicate rays
+    for(int i = 0; i < right_rays_.greens.size(); i++) {
+        for(int j = i+1; j < right_rays_.greens.size(); j++) {
+            cv::Vec3f r1, r2;
+            r1[0] = right_rays_.greens[i].x;
+            r1[1] = right_rays_.greens[i].y;
+            r1[2] = right_rays_.greens[i].z;
+            r2[0] = right_rays_.greens[j].x;
+            r2[1] = right_rays_.greens[j].y;
+            r2[2] = right_rays_.greens[j].z;
+
+            if(mag(r1-r2) < 0.02) {
+                right_rays_.greens.erase(right_rays_.greens.begin() +j);
+                j--;
+            }
+        }
+    }
+    for(int i = 0; i < right_rays_.blues.size(); i++) {
+        for(int j = i+1; j < right_rays_.blues.size(); j++) {
+            cv::Vec3f r1, r2;
+            r1[0] = right_rays_.blues[i].x;
+            r1[1] = right_rays_.blues[i].y;
+            r1[2] = right_rays_.blues[i].z;
+            r2[0] = right_rays_.blues[j].x;
+            r2[1] = right_rays_.blues[j].y;
+            r2[2] = right_rays_.blues[j].z;
+
+            if(mag(r1-r2) < 0.02) {
+                right_rays_.blues.erase(right_rays_.blues.begin() +j);
+                j--;
+            }
+        }
+    }
 
     intersect_rays();
 }
@@ -85,14 +153,19 @@ void RayIntersector::intersect_rays() {
     }
 
     // Store the Point and the Distance between the rays
-    std::vector<cv::Point3f> g_p;
+    std::vector<LedPoint> g_p;
 
     // Loop through all green rays and find all potential points
     for(int l = 0; l < left_rays_.greens.size(); l++) {
         for(int r = 0; r < right_rays_.greens.size(); r++) {
-            intersect_single_rays(left_rays_.greens[l], 
-                                  right_rays_.greens[r],
-                                  &g_p);
+            g_p.push_back(LedPoint());
+            g_p.back().ray_id_1 = l;
+            g_p.back().ray_id_2 = r;
+            // Check intersection, delete if no intersection
+            if(!intersect_single_rays(left_rays_.greens[l], 
+                                      right_rays_.greens[r],
+                                      &g_p.back()))
+                g_p.pop_back();
         }
     }
 
@@ -102,17 +175,32 @@ void RayIntersector::intersect_rays() {
         return;
     }
 
+    // Remove any duplicates
+    for(int i = 0; i < g_p.size(); i++) {
+        for(int j  = i+1; j < g_p.size(); j++) {
+            if(mag(g_p[i].point - g_p[j].point) < 0.0001) {
+                g_p.erase(g_p.begin() + j);
+                j--;
+            }
+        }
+    }
+
     // Repeat for blue
 
-    // Store the Point and the Distance between the rays
-    std::vector<cv::Point3f> b_p;
+    // Store the Point and the ray ids
+    std::vector<LedPoint> b_p;
 
     // Loop through all blue rays and find all potential points
     for(int l = 0; l < left_rays_.blues.size(); l++) {
         for(int r = 0; r < right_rays_.blues.size(); r++) {
-            intersect_single_rays(left_rays_.blues[l], 
-                                  right_rays_.blues[r],
-                                  &b_p);
+            b_p.push_back(LedPoint());
+            b_p.back().ray_id_1 = l;
+            b_p.back().ray_id_2 = r;
+            // Check intersection, delete if no intersection
+            if(!intersect_single_rays(left_rays_.blues[l], 
+                                      right_rays_.blues[r],
+                                      &b_p.back()))
+                b_p.pop_back();
         }
     }
 
@@ -120,6 +208,16 @@ void RayIntersector::intersect_rays() {
     if(!b_p.size()) {
         ROS_INFO("No valid blue intersections found");
         return;
+    }
+
+    // Remove any duplicates
+    for(int i = 0; i < b_p.size(); i++) {
+        for(int j  = i+1; j < b_p.size(); j++) {
+            if(mag(b_p[i].point - b_p[j].point) < 0.0001) {
+                b_p.erase(b_p.begin() + j);
+                j--;
+            }
+        }
     }
 
     if(debug_) {
@@ -132,9 +230,9 @@ void RayIntersector::intersect_rays() {
     finder_.find_pose(g_p, b_p);
 }
 
-void RayIntersector::intersect_single_rays(geometry_msgs::Vector3 left,
+bool RayIntersector::intersect_single_rays(geometry_msgs::Vector3 left,
                                            geometry_msgs::Vector3 right,
-                                           std::vector<cv::Point3f> *point_arr) {
+                                           LedPoint *point) {
     // Get ray starting positions
     cv::Point3f left_pos, right_pos;
     left_pos.x = left_cam_tf_.transform.translation.x;
@@ -147,10 +245,6 @@ void RayIntersector::intersect_single_rays(geometry_msgs::Vector3 left,
     // Transform vectors from camera frame to world frame
     tf2::doTransform(left, left, left_cam_tf_);
     tf2::doTransform(right, right, right_cam_tf_);
-
-    //cv::Point3f test(left.x, left.y, left.z);
-    //point_arr->push_back(test+left_pos);
-    //return;
 
     // Convert geometry_msg vector to cv vector
     cv::Vec3f l;
@@ -183,7 +277,7 @@ void RayIntersector::intersect_single_rays(geometry_msgs::Vector3 left,
     // If lambda is less than the allowed tolerance then accept intersection
     if(fabs(lam) > intersection_tol_) {
         ROS_INFO("Bad tolerance");
-        return;
+        return false;
     }
 
     // Calculate center
@@ -195,15 +289,16 @@ void RayIntersector::intersect_single_rays(geometry_msgs::Vector3 left,
        min_z_ > center.z || max_z_ < center.z) {
         ROS_INFO("Out of bounds: [%0.2f, %0.2f, %0.2f]", 
                  center.x, center.y, center.z);
-        return;
+        return false;
     }
     
-    // Push back the accepted point
-    point_arr->push_back(center);
+    // Store the associated point
+    point->point = center;
+    return true;
 }
 
-void RayIntersector::debug_publish_points(std::vector<cv::Point3f> g,
-                                          std::vector<cv::Point3f> b) {
+void RayIntersector::debug_publish_points(std::vector<LedPoint> g,
+                                          std::vector<LedPoint> b) {
     geometry_msgs::TransformStamped trans;
     trans.header.stamp = ros::Time::now();
     trans.header.frame_id = "world";
@@ -213,9 +308,9 @@ void RayIntersector::debug_publish_points(std::vector<cv::Point3f> g,
     for(int i = 0; i < g.size(); i++) {
         trans.child_frame_id = "green_" + std::to_string(i);
 
-        trans.transform.translation.x = g[i].x;
-        trans.transform.translation.y = g[i].y;
-        trans.transform.translation.z = g[i].z;
+        trans.transform.translation.x = g[i].point.x;
+        trans.transform.translation.y = g[i].point.y;
+        trans.transform.translation.z = g[i].point.z;
 
         tf_broadcaster_.sendTransform(trans);
     }
@@ -223,9 +318,9 @@ void RayIntersector::debug_publish_points(std::vector<cv::Point3f> g,
     for(int i = 0; i < b.size(); i++) {
         trans.child_frame_id = "blue_" + std::to_string(i);
 
-        trans.transform.translation.x = b[i].x;
-        trans.transform.translation.y = b[i].y;
-        trans.transform.translation.z = b[i].z;
+        trans.transform.translation.x = b[i].point.x;
+        trans.transform.translation.y = b[i].point.y;
+        trans.transform.translation.z = b[i].point.z;
 
         tf_broadcaster_.sendTransform(trans);
     }

@@ -7,7 +7,7 @@
 
     <!-- When false cameras are disabled
          allowing me to play via rosbag etc -->
-    <arg name="cams_on" value="False"/>
+    <arg name="cams_on" value="True"/>
 
     <!-- tf transforms of the cameras -->
     <!-- args: x y z (meters) yaw pitch roll (rad) frame child_frame -->
@@ -139,15 +139,15 @@
         <param name="glove_boundary_min_z" value="0.15"/>
         <param name="glove_boundary_max_z" value="0.65"/>
 
-        <param name="green_x" value="0.007"/>
-        <param name="green_y" value="0.033"/>
-        <param name="green_z" value="0.0"/>
+        <param name="green_x" value="-0.007"/>
+        <param name="green_y" value="0.0"/>
+        <param name="green_z" value="0.033"/>
 
         <param name="blue_1_x" value="0.0"/>
         <param name="blue_1_y" value="0.0"/>
         <param name="blue_1_z" value="0.0"/>
 
-        <param name="blue_2_x" value="0.0038"/>
+        <param name="blue_2_x" value="-0.0038"/>
         <param name="blue_2_y" value="0.0"/>
         <param name="blue_2_z" value="0.0"/>
 

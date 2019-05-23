@@ -36,6 +36,6 @@ Quaterniond get_quaternion_about_axis(cv::Vec3f axis,
                                       cv::Vec3f v2);
 
 // Get the quaternion needed to rotate from old_pos to new_pos
-Quaterniond get_quaternion(Triangle old_pos, Triangle new_pos);
+Quaterniond get_quaternion(Triangle& old_pos, Triangle& new_pos);
 
 #endif // __MATHS_HPP__

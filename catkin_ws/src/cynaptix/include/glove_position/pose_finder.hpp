@@ -13,6 +13,19 @@
 
 #include "glove_position/maths.hpp"
 
+// Helper struct to storea point and its two rays
+struct LedPoint {
+    cv::Point3f point;
+    int ray_id_1;
+    int ray_id_2;
+    bool shares_a_ray(LedPoint& other) {
+        if(other.ray_id_1 == ray_id_1 || other.ray_id_2 == ray_id_1 ||
+           other.ray_id_1 == ray_id_2 || other.ray_id_2 == ray_id_2)
+            return true;
+        return false;
+    }
+};
+
 // This class assumes that the LEDs are numbered starting from the green
 // LED in a clockwise direction
 class PoseFinder {
@@ -20,8 +33,8 @@ public:
     PoseFinder();
     virtual ~PoseFinder();
 
-    void find_pose(std::vector<cv::Point3f> green_points,
-                   std::vector<cv::Point3f> blue_points);
+    void find_pose(std::vector<LedPoint>& green_points,
+                   std::vector<LedPoint>& blue_points);
 private:
     // Find the error in a given combination of points
     // Error indicates how close to the correct shape this combination is

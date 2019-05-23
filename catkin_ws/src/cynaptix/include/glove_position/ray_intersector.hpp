@@ -30,13 +30,13 @@ private:
     void intersect_rays();
 
     // Intersect a single pair of rays
-    void intersect_single_rays(geometry_msgs::Vector3 left,
+    bool intersect_single_rays(geometry_msgs::Vector3 left,
                                geometry_msgs::Vector3 right,
-                               std::vector<cv::Point3f> *point_arr);
+                               LedPoint *point);
 
     // Publish an array of points for debugging
-    void debug_publish_points(std::vector<cv::Point3f> g,
-                              std::vector<cv::Point3f> b);
+    void debug_publish_points(std::vector<LedPoint> g,
+                              std::vector<LedPoint> b);
 
     // Pose Finder to find the pose
     PoseFinder finder_;
