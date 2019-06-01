@@ -96,15 +96,12 @@ Quaterniond get_yaw(Triangle& old_pos, Triangle& new_pos) {
     cv::Vec3f new_norm = cross(new_pos.A - new_pos.B,
                                new_pos.B - new_pos.C);
 
-    std::cout << "\n" << old_norm << "\n\n" << new_norm << "\n\n";
-
     // Project both normals onto the xy plane
     old_norm[2] = 0;
     new_norm[2] = 0;
 
     // Find the angle between the normals
     float d = dot(old_norm/mag(old_norm), new_norm/mag(new_norm));
-    std::cout << "D: " << d << std::endl;
     if(d > 1) d = 1;
     else if(d < -1) d = -1;
 

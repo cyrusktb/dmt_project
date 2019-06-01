@@ -118,23 +118,16 @@ def get_glove_message():
     return msg
 
 
-def process_glove_data(data):
-    global reading_message
-    global servo_torques
-    global servo_recs
+# Variable to store data in case it arrives in multiple messages
+message_data = bytearray()
 
-    b = bytearray()
-    b.extend(data)
 
-    iterator = b.__iter__()
-    for c in iterator:
-        if c == MESSAGE_START:
-            reading_message = True
-        elif reading_message:
-            if c == MESSAGE_END:
-                reading_message = False
-
-            elif c == ACTUAL_MOTOR_POS:
+def process_message_data():
+    global message_data
+    iterator = message_data.__iter__()
+    try:
+        for c in iterator:
+            if c == ACTUAL_MOTOR_POS:
                 # Check which motor it is
                 motor = iterator.next()
 
@@ -156,11 +149,31 @@ def process_glove_data(data):
                     servo_recs[2] = fnum
                 else:
                     rospy.logerr("Received invalid position motor specifier.")
-
             else:
-                rospy.logerr("Received invalid command while reading.")
+                rospy.logerr("Received invalid command.")
+    except StopIteration:
+        pass
+    finally:
+        message_data = bytearray()
+        publish_data()
 
-        else:
-            rospy.logerr("Received command before reading.")
 
-    publish_data()
+def process_glove_data(data):
+    global reading_message
+    global servo_torques
+    global servo_recs
+    global message_data
+
+    b = bytearray()
+    b.extend(data)
+
+    iterator = b.__iter__()
+    for c in iterator:
+        if c == MESSAGE_START:
+            reading_message = True
+        elif reading_message:
+            if c == MESSAGE_END:
+                reading_message = False
+                process_message_data()
+            else:
+                message_data.append(c)

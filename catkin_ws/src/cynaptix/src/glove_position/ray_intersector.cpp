@@ -171,7 +171,6 @@ void RayIntersector::intersect_rays() {
 
     // Return if none found
     if(!g_p.size()) {
-        ROS_INFO("No valid green intersections found!");
         return;
     }
 
@@ -206,7 +205,6 @@ void RayIntersector::intersect_rays() {
 
     // Return if none found
     if(!b_p.size()) {
-        ROS_INFO("No valid blue intersections found");
         return;
     }
 
@@ -223,8 +221,6 @@ void RayIntersector::intersect_rays() {
     if(debug_) {
         debug_publish_points(g_p, b_p);
     }
-
-    ROS_INFO("g_size: %d -- b_size: %d", g_p.size(), b_p.size());
 
     // Find publish the pose of the glove
     finder_.find_pose(g_p, b_p);
@@ -276,7 +272,6 @@ bool RayIntersector::intersect_single_rays(geometry_msgs::Vector3 left,
 
     // If lambda is less than the allowed tolerance then accept intersection
     if(fabs(lam) > intersection_tol_) {
-        ROS_INFO("Bad tolerance");
         return false;
     }
 

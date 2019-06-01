@@ -8,36 +8,45 @@ import threading
 
 import glove_connection.message_processor as mp
 
+
 def process_connection(conn, rate):
-    # Double the frequency as we call the sleep function twice
-    time_keeper = rospy.Rate(2*rate)
+    # We sleep twice per loop so double the rate
+    time_keeper = rospy.Rate(rate * 2)
 
     data = ""
 
     while not rospy.is_shutdown():
-        # Send data to the glove
-        msg = mp.get_glove_message()
+        # Read data from the glove
         try:
-            conn.send(msg)
+            data = conn.recv(64)
+            if len(data) > 0:
+                mp.process_glove_data(data)
         except socket.timeout:
-            rospy.loginfo("Connection timed out.")
+            pass
+        except socket.error as e:
+            rospy.loginfo("Unknown error: %s", e)
             return
 
         time_keeper.sleep()
-        
-        # Receive data from the glove
-        try:
-            data = conn.recv(64)
-        except:
-            rospy.loginfo("Connection timed out.")
-            return
 
-        mp.process_glove_data(data)
+        # Send data to the glove
+        msg = mp.get_glove_message()
+        try:
+            conn.sendall(msg)
+            rospy.loginfo(''.join('0x{:02X} '.format(x) for x in msg))
+        except socket.timeout:
+            rospy.loginfo("Connection timed out.")
+            listener_running = False
+        except socket.error as e:
+            rospy.loginfo("Unknown error: %s", e)
+            listener_running = False
 
         time_keeper.sleep()
 
     # Close the connection if the node is shut down
     conn.close()
+    listener_running = False
+    listener.join()
 
 
 if __name__ == "__main__":
@@ -93,6 +102,9 @@ if __name__ == "__main__":
         process_connection(conn, rate)
 
         rospy.loginfo("Lost connection with '" + addr[0] + "'.")
+
+        # Close the connection
+        conn.close()
 
     ros_thread.join()
     s.close()
