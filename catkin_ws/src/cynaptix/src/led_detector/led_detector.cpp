@@ -91,6 +91,11 @@ void LedDetector::image_callback(const sensor_msgs::ImageConstPtr& msg,
     cv::Matx33f intrinsic(info->K[0], 0         , info->K[2],
                           0         , info->K[4], info->K[5],
                           0         , 0         , 1         );
+
+    cv::Mat buf;
+    cv::undistort(cv_ptr->image, buf, intrinsic, info->D);
+    cv_ptr->image = buf;
+
     // We only use the inverse of it though
     intrinsic = intrinsic.inv();
 
