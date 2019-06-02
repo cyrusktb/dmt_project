@@ -98,7 +98,10 @@ public:
     // Set *lra* to false to drive an erm instead
     // *period_ms* is the period of oscillation of the driven LRA
     // For an ERM *period_ms* is the back emf sample rate
-    Drv2605(I2C *i2c, bool lra = true, float period_ms = 4.1666667);
+    Drv2605(I2C *i2c);
+
+    // Setup the LRA
+    void setup(bool lra = true, float period_ms = 4.1666667);
 
     // Set the slot *slot* to contain the waveform *waveform*
     // The slots can be played in order with the *go()* function

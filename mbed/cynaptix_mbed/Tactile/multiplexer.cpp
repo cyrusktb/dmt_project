@@ -6,7 +6,7 @@ Multiplexer::Multiplexer(I2C *i2c, char i2c_addr)
 }
 
 void Multiplexer::select(char channel) {
-    char data = 0x08 | channel;
+    char data = 0x01 << channel;
     i2c_->write(i2c_addr_, &data, 1);
 }
 

@@ -70,9 +70,9 @@ char Drv2605::read_register(char reg) {
     data[0] = reg;
     
     // Tell the chip which register we want
-    p_i2c->write(DRV2605_ADDR, data, 1);
+    p_i2c->write(DRV2605_ADDR << 1, data, 1);
     // Read the register data
-    p_i2c->read(DRV2605_ADDR, data, 1);
+    p_i2c->read(DRV2605_ADDR << 1, data, 1);
 
     return data[0];
 }

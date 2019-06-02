@@ -5,6 +5,8 @@
 #include "multiplexer.h"
 #include "drv2605.h"
 
+#include "kinesthetix.h" // For serial for debugging
+
 // The 7 bit i2c addresses are 0x70 and 0x72, but they need to be bit
 // shifted by 1, giving 0xE0 and 0xE4 respectively
 #define MULTI8ADDR 0xE0

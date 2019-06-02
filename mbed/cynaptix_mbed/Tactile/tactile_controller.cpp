@@ -25,6 +25,7 @@ TactileController::~TactileController() {
 
 void TactileController::set_motor_power(char motor_power, 
                                         VibrationMotor motor) {
+    pc.printf("Motor %d:%d\n", (short)motor, motor_power);
     switch(motor) {
     // Thumb left is the '0th' motor (it's on the 2nd multiplexer)
     case TMB_L:
@@ -39,7 +40,7 @@ void TactileController::set_motor_power(char motor_power,
     // responds when the input is from 128 to 255
     lra_.set_realtime_value(motor_power+128);
     switch(motor) {
-    case MDL_R:
+    case TMB_L:
         multi_2_.disable();
         break;
     default:

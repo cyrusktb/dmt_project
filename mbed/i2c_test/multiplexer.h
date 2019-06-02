@@ -9,10 +9,10 @@ public:
     Multiplexer(I2C *i2c, char i2c_addr = 0xE4);
 
     // Enable a channel
-    void select(char channel);
+    int select(char channel);
     
     // Disable all channels
-    void disable();
+    int disable();
 
 private:
     I2C *i2c_;
