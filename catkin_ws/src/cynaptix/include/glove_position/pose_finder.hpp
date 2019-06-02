@@ -57,6 +57,12 @@ private:
 
     // Distances between LEDs
     float gb1_len_, gb2_len_, bb_len_;
+
+    // Adjustments for linear errors in position estimates
+    float x_grad_, x_intercept_,
+          y_grad_, y_intercept_,
+          z_grad_, z_intercept_,
+          yaw_grad_, yaw_intercept_;
 };
 
 #endif // __POSE_FINDER_HPP__

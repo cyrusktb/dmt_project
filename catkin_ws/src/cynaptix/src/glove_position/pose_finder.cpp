@@ -33,6 +33,29 @@ PoseFinder::PoseFinder() :nh_("~") {
         ROS_FATAL("Failed to get param 'blue_2_z'");
     led_pos_.C.z = temp;
 
+    // Constants to adjust for linear errors in x, y, z, theta
+    if(!nh_.param<float>("x_grad", x_grad_, 1))
+        ROS_WARN("Failed to get param 'x_grad', defaulting to %d", x_grad_);
+    if(!nh_.param<float>("x_intercept", x_intercept_, 1))
+        ROS_WARN("Failed to get param 'x_intercept', defaulting to %d",
+                 x_intercept_);
+    if(!nh_.param<float>("y_grad", y_grad_, 1))
+        ROS_WARN("Failed to get param 'y_grad', defaulting to %d", y_grad_);
+    if(!nh_.param<float>("y_intercept", y_intercept_, 1))
+        ROS_WARN("Failed to get param 'y_intercept', defaulting to %d",
+                 y_intercept_);
+    if(!nh_.param<float>("z_grad", z_grad_, 1))
+        ROS_WARN("Failed to get param 'z_grad', defaulting to %d", z_grad_);
+    if(!nh_.param<float>("z_intercept", z_intercept_, 1))
+        ROS_WARN("Failed to get param 'z_intercept', defaulting to %d",
+                 z_intercept_);
+    if(!nh_.param<float>("yaw_grad", yaw_grad_, 1))
+        ROS_WARN("Failed to get param 'yaw_grad', defaulting to %d", 
+                 yaw_grad_);
+    if(!nh_.param<float>("yaw_intercept", yaw_intercept_, 1))
+        ROS_WARN("Failed to get param 'yaw_intercept', defaulting to %d",
+                 yaw_intercept_);
+
     gb1_len_ = mag(led_pos_.A - led_pos_.B);
     gb2_len_ = mag(led_pos_.A - led_pos_.C);
     bb_len_ = mag(led_pos_.B - led_pos_.C);
@@ -131,6 +154,11 @@ void PoseFinder::find_glove_pose(cv::Point3f green,
     cv::Vec3f trans = (green - q * led_pos_.A +
                        blue_1 - q * led_pos_.B +
                        blue_2 - q * led_pos_.C) / 3;
+
+    // Asjust with empirical linear estimations of error
+    trans[0] = trans[0]*x_grad_ + x_intercept_;
+    trans[1] = trans[1]*y_grad_ + y_intercept_;
+    trans[2] = trans[2]*z_grad_ + z_intercept_;
     
     // Calculate the pose
     geometry_msgs::TransformStamped msg;

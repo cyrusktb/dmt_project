@@ -13,10 +13,10 @@
     <!-- args: x y z (meters) yaw pitch roll (rad) frame child_frame -->
     <node pkg="tf2_ros" type="static_transform_publisher" 
           name="left_camera_link_broadcaster" 
-          args="-0.1 0 0.3 -0.1745329 0 -1.570796 world left_camera_frame"/>
+          args="-0.1 0 0.2 -0.1745329 0 -1.570796 world left_camera_frame"/>
     <node pkg="tf2_ros" type="static_transform_publisher" 
           name="right_camera_link_broadcaster" 
-          args="0.1 0 0.3 0.1745329 0 -1.570796 world right_camera_frame"/>
+          args="0.1 0 0.2 0.1745329 0 -1.570796 world right_camera_frame"/>
 
     <group ns="left_camera">    
         <!-- set camera exposure time -->
@@ -136,7 +136,7 @@
         <param name="glove_boundary_min_y" value="0.20"/>
         <param name="glove_boundary_max_y" value="1.00"/>
 
-        <param name="glove_boundary_min_z" value="0.15"/>
+        <param name="glove_boundary_min_z" value="0.05"/>
         <param name="glove_boundary_max_z" value="0.65"/>
 
         <param name="green_x" value="-0.007"/>
@@ -151,6 +151,14 @@
         <param name="blue_2_y" value="0.0"/>
         <param name="blue_2_z" value="0.0"/>
 
+        <param name="x_grad" value="1.11111111"/>
+        <param name="x_intercept" value="0.00911111111"/>
+
+        <param name="y_grad" value="1.25"/>
+        <param name="y_intercept" value="-0.0385"/>
+
+        <param name="z_grad" value="1"/>
+        <param name="z_intercept" value="0"/>
     </node>
 
     <!-- Run RVIZ -->
