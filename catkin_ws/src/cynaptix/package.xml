@@ -9,6 +9,7 @@
   <license>MIT</license>
 
   <depend>roscpp</depend>
+  <depend>rpspy</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
@@ -23,7 +24,7 @@
 
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>usb_cam</exec_depend>
-  <exec_depend>find_object_2d</exec_depend>
+  <exec_depend>rviz</exec_depend>
 
   <buildtool_depend>catkin</buildtool_depend>
 
