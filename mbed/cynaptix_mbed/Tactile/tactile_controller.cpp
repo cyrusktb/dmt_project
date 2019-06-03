@@ -2,7 +2,7 @@
 
 TactileController::TactileController() 
         :i2c_(PB_7, PB_6), 
-         multi_2_(&i2c_, MULTI2ADDR), 
+         multi_2_(&i2c_, MULTI2ADDR, true), 
          multi_8_(&i2c_, MULTI8ADDR), 
          lra_(&i2c_) {
     // Set each LRA to receive realtime controls

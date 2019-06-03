@@ -18,8 +18,7 @@ public:
     float get_finger_pos(char finger) {
         if(finger > 2) return -1;
         // TODO: get the finger position and return it
-        targets_[finger]/*.get_pos()*/;
-        return 5;
+        return targets_[finger]/*.get_pos()*/;
     }
 
     // Update PID control of each finger

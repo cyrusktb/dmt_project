@@ -21,6 +21,8 @@ public:
     ~Kinesthetix();
     // Control position of servo, call every loop
     void control(float desired);
+    // Get the current position of this finger
+    float get_pos();
 private:
     Timer t;
     Servo *myservo;

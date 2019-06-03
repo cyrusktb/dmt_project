@@ -29,6 +29,11 @@ const char MTR_POS = 0x05;
 // Vibration motor strengths (%): Followed by: <9 bytes>
 const char VIB_STR = 0x06;
 
+// Motor names
+const char THUMB = 0x06;
+const char INDEX = 0x07;
+const char MIDDLE = 0x08;
+
 };
 
 #endif // __MESSAGES_H__

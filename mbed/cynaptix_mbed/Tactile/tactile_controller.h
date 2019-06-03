@@ -16,18 +16,18 @@
 enum VibrationMotor {
     // Thumb: left, tip, right
     TMB_L = 0,
-    TMB_T = 1,
-    TMB_R = 2,
+    TMB_T = 3,
+    TMB_R = 4,
 
     // Index finger: left, tip, right
-    INDX_L = 3,
-    INDX_T = 4,
-    INDX_R = 5,
+    INDX_L = 5,
+    INDX_T = 6,
+    INDX_R = 7,
 
     // Middle finger: left, tip, right
-    MDL_L = 6,
-    MDL_T = 7,
-    MDL_R = 8
+    MDL_L = 8,
+    MDL_T = 1,
+    MDL_R = 2
 };
 
 class TactileController {

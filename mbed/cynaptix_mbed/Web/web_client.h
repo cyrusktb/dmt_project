@@ -5,21 +5,23 @@
 #include "ATParser.h"
 #include <string>
 
+#include "command_processor.h"
 #include "messages.h"
 
-#define REMOTE_IP (std::string)"10.42.0.1"
-#define REMOTE_PORT 13/*53821*/
+#include "kinesthetix.h"
+
+#define REMOTE_IP "10.42.0.1"
+#define REMOTE_PORT 25565
 #define DEFAULT_TIMEOUT 50
 
-#define SSID (std::string)"nickick-laptop"
-#define PWD (std::string)"auSEtdYV"
+#define SSID "nickick-laptop"
+#define PWD "auSEtdYV"
 
 class WebClient {
 public:
     // ctor takes the tx, rx and reset PinNames of the ESP, as well as a
     // callback for when a full message has been received
-    WebClient(PinName tx, PinName rx, PinName reset, 
-              Callback<void(std::string)> message_callback);
+    WebClient(PinName tx, PinName rx, PinName reset, CommandProcessor *cmd);
 
     // dtor
     ~WebClient();
@@ -46,10 +48,10 @@ private:
     void set_error(std::string err);
 
     // Buffered serial to receive lots of messages between updates
-    BufferedSerial *esp_bs_;
+    BufferedSerial esp_bs_;
 
     // AT command parser for the esp
-    ATParser *esp_;
+    ATParser esp_;
 
     // Reset pin of the esp
     DigitalOut reset_;
@@ -63,8 +65,8 @@ private:
     // All received data
     std::string data_;
 
-    // Message received callback
-    Callback<void(std::string)> message_callback_;
+    // To process received messages
+    CommandProcessor *cmd_;
 };
 
 #endif // __WEB_CLIENT_H__
